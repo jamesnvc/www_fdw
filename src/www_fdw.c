@@ -38,8 +38,8 @@ PG_MODULE_MAGIC;
 
 struct WWW_fdw_option
 {
-	const char	*optname;
-	Oid		optcontext;	/* Oid of catalog in which option may appear */
+	const char *optname;
+	Oid optcontext; /* Oid of catalog in which option may appear */
 };
 
 /*
@@ -48,76 +48,76 @@ struct WWW_fdw_option
  */
 static struct WWW_fdw_option valid_options[] =
 {
-	{ "uri",		ForeignServerRelationId },
-	{ "uri_select",	ForeignServerRelationId },
-	{ "uri_insert",	ForeignServerRelationId },
-	{ "uri_delete",	ForeignServerRelationId },
-	{ "uri_update",	ForeignServerRelationId },
-	{ "uri_callback",	ForeignServerRelationId },
+	{ "uri", ForeignServerRelationId },
+	{ "uri_select", ForeignServerRelationId },
+	{ "uri_insert", ForeignServerRelationId },
+	{ "uri_delete", ForeignServerRelationId },
+	{ "uri_update", ForeignServerRelationId },
+	{ "uri_callback", ForeignServerRelationId },
 
-	{ "method_select",	ForeignServerRelationId },
-	{ "method_insert",	ForeignServerRelationId },
-	{ "method_delete",	ForeignServerRelationId },
-	{ "method_update",	ForeignServerRelationId },
+	{ "method_select", ForeignServerRelationId },
+	{ "method_insert", ForeignServerRelationId },
+	{ "method_delete", ForeignServerRelationId },
+	{ "method_update", ForeignServerRelationId },
 
-	{ "request_user_agent",	ForeignServerRelationId },
-	{ "request_serialize_callback",	ForeignServerRelationId },
-	{ "request_serialize_type",	ForeignServerRelationId },
-	{ "request_serialize_human_readable",	ForeignServerRelationId },
+	{ "request_user_agent", ForeignServerRelationId },
+	{ "request_serialize_callback", ForeignServerRelationId },
+	{ "request_serialize_type", ForeignServerRelationId },
+	{ "request_serialize_human_readable", ForeignServerRelationId },
 
-	{ "response_type",	ForeignServerRelationId },
-	{ "response_deserialize_callback",	ForeignServerRelationId },
-	{ "response_iterate_callback",	ForeignServerRelationId },
+	{ "response_type", ForeignServerRelationId },
+	{ "response_deserialize_callback", ForeignServerRelationId },
+	{ "response_iterate_callback", ForeignServerRelationId },
 
-	{ "ssl_cert",		ForeignServerRelationId },
-	{ "ssl_key",		ForeignServerRelationId },
+	{ "ssl_cert", ForeignServerRelationId },
+	{ "ssl_key", ForeignServerRelationId },
 	{ "cainfo", ForeignServerRelationId },
-	{ "proxy",	ForeignServerRelationId },
+	{ "proxy", ForeignServerRelationId },
 
 	/* Sentinel */
-	{ NULL,			InvalidOid }
+	{ NULL, InvalidOid }
 };
 
-typedef struct	WWW_fdw_options
+typedef struct WWW_fdw_options
 {
-	char*	uri;
-	char*	uri_select;
-	char*	uri_insert;
-	char*	uri_delete;
-	char*	uri_update;
-	char*	uri_callback;
-	char*	method_select;
-	char*	method_insert;
-	char*	method_delete;
-	char*	method_update;
-	char*	request_user_agent;
-	char*	request_serialize_callback;
-	char*	request_serialize_type;
-	char*	request_serialize_human_readable;
-	char*	response_type;
-	char*	response_deserialize_callback;
-	char*	response_iterate_callback;
-	char*		ssl_cert;
-	char*		ssl_key;
-	char*		cainfo;
-	char*		proxy;
+	char* uri;
+	char* uri_select;
+	char* uri_insert;
+	char* uri_delete;
+	char* uri_update;
+	char* uri_callback;
+	char* method_select;
+	char* method_insert;
+	char* method_delete;
+	char* method_update;
+	char* request_user_agent;
+	char* request_serialize_callback;
+	char* request_serialize_type;
+	char* request_serialize_human_readable;
+	char* response_type;
+	char* response_deserialize_callback;
+	char* response_iterate_callback;
+	char* ssl_cert;
+	char* ssl_key;
+	char* cainfo;
+	char* proxy;
 } WWW_fdw_options;
 
 typedef struct Reply
 {
-	HeapTuple		*tuples;	/* array with result tuples */
-	uint32			ntuples;	/* number of results */
-	int				tuple_index;
-	WWW_fdw_options	*options;
-	Oid					opts_type;
-	Datum				opts_value;
+	HeapTuple *tuples; /* array with result tuples */
+	uint32 ntuples; /* number of results */
+	int tuple_index;
+	WWW_fdw_options *options;
+	Oid opts_type;
+	Datum opts_value;
 } Reply;
 
 typedef struct PostParameters
 {
-	bool			post;
-	StringInfoData	data;
-	StringInfoData	content_type;
+	bool post;
+	StringInfoData data;
+	StringInfoData content_type;
 } PostParameters;
 
 static bool www_is_valid_option(const char *option, Oid context);
@@ -181,9 +181,9 @@ parse_parameter(char* name, char** var, DefElem* param)
 						));
 
 		*var = defGetString(param);
-		return	true;
+		return true;
 	}
-	return	false;
+	return false;
 }
 
 /*
@@ -193,30 +193,30 @@ parse_parameter(char* name, char** var, DefElem* param)
 	Datum
 www_fdw_validator(PG_FUNCTION_ARGS)
 {
-	List		*options_list = untransformRelOptions(PG_GETARG_DATUM(0));
-	Oid			catalog = PG_GETARG_OID(1);
-	ListCell	*cell;
-	char		*uri	= NULL;
-	char		*uri_select	= NULL;
-	char		*uri_insert	= NULL;
-	char		*uri_delete	= NULL;
-	char		*uri_update	= NULL;
-	char		*uri_callback	= NULL;
-	char		*method_select	= NULL;
-	char		*method_insert	= NULL;
-	char		*method_delete	= NULL;
-	char		*method_update	= NULL;
-	char		*request_user_agent= NULL;
-	char		*request_serialize_callback	= NULL;
-	char		*request_serialize_type	= NULL;
-	char		*request_serialize_human_readable	= NULL;
-	char		*response_type	= NULL;
-	char		*response_deserialize_callback	= NULL;
-	char		*response_iterate_callback	= NULL;
-	char						*ssl_cert			 = NULL;
-	char						*ssl_key			 = NULL;
-	char						*cainfo				 = NULL;
-	char						*proxy				 = NULL;
+	List    *options_list = untransformRelOptions(PG_GETARG_DATUM(0));
+	Oid      catalog = PG_GETARG_OID(1);
+	ListCell  *cell;
+	char    *uri                              = NULL;
+	char    *uri_select                       = NULL;
+	char    *uri_insert                       = NULL;
+	char    *uri_delete                       = NULL;
+	char    *uri_update                       = NULL;
+	char    *uri_callback                     = NULL;
+	char    *method_select                    = NULL;
+	char    *method_insert                    = NULL;
+	char    *method_delete                    = NULL;
+	char    *method_update                    = NULL;
+	char    *request_user_agent               = NULL;
+	char    *request_serialize_callback       = NULL;
+	char    *request_serialize_type           = NULL;
+	char    *request_serialize_human_readable = NULL;
+	char    *response_type                    = NULL;
+	char    *response_deserialize_callback    = NULL;
+	char    *response_iterate_callback        = NULL;
+	char    *ssl_cert                         = NULL;
+	char    *ssl_key                          = NULL;
+	char    *cainfo                           = NULL;
+	char    *proxy                            = NULL;
 
 	d("www_fdw_validator routine");
 
@@ -226,7 +226,7 @@ www_fdw_validator(PG_FUNCTION_ARGS)
 	 */
 	foreach(cell, options_list)
 	{
-		DefElem		 *def = (DefElem *) lfirst(cell);
+		DefElem  *def = (DefElem *) lfirst(cell);
 
 		if (!www_is_valid_option(def->defname, catalog))
 		{
@@ -356,8 +356,8 @@ www_fdw_handler(PG_FUNCTION_ARGS)
 percent_encode(unsigned char *s, int srclen)
 {
 	unsigned char  *end;
-	StringInfoData	buf;
-	int				len;
+	StringInfoData buf;
+	int len;
 
 	initStringInfo(&buf);
 
@@ -369,7 +369,7 @@ percent_encode(unsigned char *s, int srclen)
 	for (; s < end; s += len)
 	{
 		unsigned char  *utf;
-		int				ulen;
+		int ulen;
 
 		len = pg_mblen((const char *) s);
 
@@ -400,9 +400,9 @@ percent_encode(unsigned char *s, int srclen)
 
 /*
  * www_param
- *	check and create column=value string for column=value criteria in query
- *	raise error for operators differ from '='
- *	raise error for operators with not 2 arguments
+ * check and create column=value string for column=value criteria in query
+ * raise error for operators differ from '='
+ * raise error for operators with not 2 arguments
  */
 	static char *
 www_param(Node *node, TupleDesc tupdesc)
@@ -434,17 +434,17 @@ www_param(Node *node, TupleDesc tupdesc)
 				 */
 		IsA(node, BoolExpr)
 			) {
-				BoolExpr		*op = (BoolExpr*)node;
+				BoolExpr *op = (BoolExpr*)node;
 				if(
 						NOT_EXPR == op->boolop
 						&&
 						1 == list_length(op->args)
 					) {
-					Node		*arg = list_nth(op->args, 0);
+					Node *arg = list_nth(op->args, 0);
 					if( IsA(arg, Var) ) {
-						char		*key;
-						StringInfoData	buf;
-						Index		varattno = ((Var *) arg)->varattno;
+						char *key;
+						StringInfoData buf;
+						Index varattno = ((Var *) arg)->varattno;
 						Assert(0 < varattno && varattno <= tupdesc->natts);
 						key = NameStr(tupdesc->attrs[varattno - 1]->attname);
 
@@ -476,9 +476,9 @@ www_param(Node *node, TupleDesc tupdesc)
 				 */
 			IsA(node, Var)
 			) {
-		char		*key;
-		StringInfoData	buf;
-		Index		varattno = ((Var *) node)->varattno;
+		char *key;
+		StringInfoData buf;
+		Index varattno = ((Var *) node)->varattno;
 		Assert(0 < varattno && varattno <= tupdesc->natts);
 		key = NameStr(tupdesc->attrs[varattno - 1]->attname);
 
@@ -489,11 +489,11 @@ www_param(Node *node, TupleDesc tupdesc)
 	}
 	else if (IsA(node, OpExpr))
 	{
-		OpExpr		 *op = (OpExpr *) node;
-		Node		 *left, *right, *tmp;
-		Index		varattno;
-		char		 *key, *val;
-		StringInfoData	buf;
+		OpExpr  *op = (OpExpr *) node;
+		Node  *left, *right, *tmp;
+		Index varattno;
+		char  *key, *val;
+		StringInfoData buf;
 
 		if (list_length(op->args) != 2)
 			ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR), errmsg("Operators with not 2 arguments aren't supported")));
@@ -545,9 +545,9 @@ www_param(Node *node, TupleDesc tupdesc)
 			ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR), errmsg("One operand supposed to be column another constant")));
 		if(IsA(left, Const) && IsA(right, Var))
 		{
-			tmp		= left;
-			left	= right;
-			right	= tmp;
+			tmp = left;
+			left = right;
+			right = tmp;
 		}
 
 		varattno = ((Var *) left)->varattno;
@@ -572,8 +572,8 @@ www_param(Node *node, TupleDesc tupdesc)
 
 /*
  * www_get_forein_rel_size
- *	 Create a FdwPlan, which is empty for now.
- *		 Obtain relation size estimates for a foreign table
+ *  Create a FdwPlan, which is empty for now.
+ *  Obtain relation size estimates for a foreign table
  */
 	static void
 www_get_foreign_rel_size(PlannerInfo *root,
@@ -586,11 +586,11 @@ www_get_foreign_rel_size(PlannerInfo *root,
 
 /*
  * www_get_foreign_paths
- *		Create possible access paths for a scan on the foreign table
+ * Create possible access paths for a scan on the foreign table
  *
- *		Currently we don't support any push-down feature, so there is only one
- *		possible access path, which simply returns all records in the order in
- *		the data file.
+ * Currently we don't support any push-down feature, so there is only one
+ * possible access path, which simply returns all records in the order in
+ * the data file.
  */
 	static void
 www_get_foreign_paths(PlannerInfo *root,
@@ -600,9 +600,9 @@ www_get_foreign_paths(PlannerInfo *root,
 	/* calculations from file_fdw
 	 * we can't calculate value for baserel->rows here
 	 * */
-	Cost		cpu_per_tuple		= cpu_tuple_cost * 10 + baserel->baserestrictcost.per_tuple;
-	Cost		startup_cost		= baserel->baserestrictcost.startup;
-	Cost		total_cost			= startup_cost + cpu_per_tuple * baserel->rows;
+	Cost cpu_per_tuple = cpu_tuple_cost * 10 + baserel->baserestrictcost.per_tuple;
+	Cost startup_cost = baserel->baserestrictcost.startup;
+	Cost total_cost = startup_cost + cpu_per_tuple * baserel->rows;
 
 	/* Create a ForeignPath node and add it as only possible path */
 	add_path(baserel, (Path *)
@@ -617,7 +617,7 @@ www_get_foreign_paths(PlannerInfo *root,
 
 /*
  * www_get_foreign_plan
- *		Create a ForeignScan plan node for scanning the foreign table
+ * Create a ForeignScan plan node for scanning the foreign table
  */
 	static ForeignScan *
 www_get_foreign_plan(PlannerInfo *root,
@@ -627,7 +627,7 @@ www_get_foreign_plan(PlannerInfo *root,
 		List *tlist,
 		List *scan_clauses)
 {
-	Index		scan_relid = baserel->relid;
+	Index scan_relid = baserel->relid;
 
 	/*
 	 * We have no native ability to evaluate restriction clauses, so we just
@@ -648,7 +648,7 @@ www_get_foreign_plan(PlannerInfo *root,
 
 /*
  * www_explain
- *	 Produce extra output for EXPLAIN
+ *  Produce extra output for EXPLAIN
  */
 	static void
 www_explain(ForeignScanState *node, ExplainState *es)
@@ -668,49 +668,49 @@ describe_spi_code(int code)
 {
 	switch(code)
 	{
-		case SPI_ERROR_CONNECT:		return "ERROR CONNECT";
-		case SPI_ERROR_COPY:			return "ERROR COPY";
-		case SPI_ERROR_OPUNKNOWN:	return "ERROR OPUNKNOWN";
-		case SPI_ERROR_UNCONNECTED:	return "ERROR UNCONNECTED";
-		case SPI_ERROR_CURSOR:		return "ERROR CURSOR";
-		case SPI_ERROR_ARGUMENT:		return "ERROR ARGUMENT";
-		case SPI_ERROR_PARAM:		return "ERROR PARAM";
-		case SPI_ERROR_TRANSACTION:	return "ERROR TRANSACTION";
-		case SPI_ERROR_NOATTRIBUTE:	return "ERROR NOATTRIBUTE";
-		case SPI_ERROR_NOOUTFUNC:	return "ERROR NOOUTFUNC";
-		case SPI_ERROR_TYPUNKNOWN:	return "ERROR TYPUNKNOWN";
+		case SPI_ERROR_CONNECT: return "ERROR CONNECT";
+		case SPI_ERROR_COPY: return "ERROR COPY";
+		case SPI_ERROR_OPUNKNOWN: return "ERROR OPUNKNOWN";
+		case SPI_ERROR_UNCONNECTED: return "ERROR UNCONNECTED";
+		case SPI_ERROR_CURSOR: return "ERROR CURSOR";
+		case SPI_ERROR_ARGUMENT: return "ERROR ARGUMENT";
+		case SPI_ERROR_PARAM: return "ERROR PARAM";
+		case SPI_ERROR_TRANSACTION: return "ERROR TRANSACTION";
+		case SPI_ERROR_NOATTRIBUTE: return "ERROR NOATTRIBUTE";
+		case SPI_ERROR_NOOUTFUNC: return "ERROR NOOUTFUNC";
+		case SPI_ERROR_TYPUNKNOWN: return "ERROR TYPUNKNOWN";
 
-		case SPI_OK_CONNECT:			return "OK CONNECT";
-		case SPI_OK_FINISH:			return "OK FINISH";
-		case SPI_OK_FETCH:			return "OK FETCH";
-		case SPI_OK_UTILITY:			return "OK UTILITY";
-		case SPI_OK_SELECT:			return "OK SELECT";
-		case SPI_OK_SELINTO:			return "OK SELINTO";
-		case SPI_OK_INSERT:			return "OK INSERT";
-		case SPI_OK_DELETE:			return "OK DELETE";
-		case SPI_OK_UPDATE:			return "OK UPDATE";
-		case SPI_OK_CURSOR:			return "OK CURSOR";
+		case SPI_OK_CONNECT: return "OK CONNECT";
+		case SPI_OK_FINISH: return "OK FINISH";
+		case SPI_OK_FETCH: return "OK FETCH";
+		case SPI_OK_UTILITY: return "OK UTILITY";
+		case SPI_OK_SELECT: return "OK SELECT";
+		case SPI_OK_SELINTO: return "OK SELINTO";
+		case SPI_OK_INSERT: return "OK INSERT";
+		case SPI_OK_DELETE: return "OK DELETE";
+		case SPI_OK_UPDATE: return "OK UPDATE";
+		case SPI_OK_CURSOR: return "OK CURSOR";
 		case SPI_OK_INSERT_RETURNING: return "OK INSERT_RETURNING";
 		case SPI_OK_DELETE_RETURNING: return "OK DELETE_RETURNING";
 		case SPI_OK_UPDATE_RETURNING: return "OK UPDATE_RETURNING";
-		case SPI_OK_REWRITTEN:		return "OK REWRITTEN";
+		case SPI_OK_REWRITTEN: return "OK REWRITTEN";
 
 		default:
-															return	"undefined code";
+															return "undefined code";
 	}
 
-	return	"undefined code";
+	return "undefined code";
 }
 
 /*
  * serialize_request_parameters_with_callback
  * serialize request parameters using specified callback
  * currently following serialize of quals are supported:
- *	* null (pass as it as null no matter on quals)
- *	* log (same as with debug_print_parse)
- *	* empty string otherwise (plus issue warning)
- *	* json (pass as it as null no matter on quals)
- *	* xml (pass as it as null no matter on quals)
+ * * null (pass as it as null no matter on quals)
+ * * log (same as with debug_print_parse)
+ * * empty string otherwise (plus issue warning)
+ * * json (pass as it as null no matter on quals)
+ * * xml (pass as it as null no matter on quals)
  * there is not finished branch for tree serialization into json/xml
  * but it started taking too much time and postponed for next versions (if any)
  */
@@ -718,15 +718,15 @@ static
 	void
 serialize_request_with_callback(WWW_fdw_options *opts, Oid opts_type, Datum opts_value, ForeignScanState *node, StringInfoData *url, PostParameters *post)
 {
-	int	res;
-	StringInfoData	cmd, qualSer;
-	Oid	argtypes[4];
+	int res;
+	StringInfoData cmd, qualSer;
+	Oid argtypes[4];
 	Datum argvalues[4], rpost;
 	char nulls[4];
 	char *rurl = NULL;
 	HeapTupleHeader rpost_tuple_header;
 	bool isnull;
-	MemoryContext	mctxt = CurrentMemoryContext, spimctxt;
+	MemoryContext mctxt = CurrentMemoryContext, spimctxt;
 
 	argtypes[0] = opts_type;
 	argvalues[0] = opts_value;
@@ -792,7 +792,7 @@ serialize_request_with_callback(WWW_fdw_options *opts, Oid opts_type, Datum opts
 	appendStringInfo(&cmd, "SELECT * FROM %s($1,$2,$3,$4)", opts->request_serialize_callback);
 
 	SPI_connect_wrapper();
-	res	= SPI_execute_with_args(cmd.data, 4, argtypes, argvalues, nulls, true, 0);
+	res = SPI_execute_with_args(cmd.data, 4, argtypes, argvalues, nulls, true, 0);
 
 	if(0 > res)
 	{
@@ -862,31 +862,31 @@ serialize_request_with_callback(WWW_fdw_options *opts, Oid opts_type, Datum opts
 
 /*
  * serialize_request_parameters
- *	serialize column=value sql conditions into column=value get parameters
- *	column & value are url encoded
+ * serialize column=value sql conditions into column=value get parameters
+ * column & value are url encoded
  */
 	static void
 serialize_request_parameters(ForeignScanState* node, StringInfoData *url)
 {
 	if (node->ss.ps.plan->qual)
 	{
-		bool		param_first = true;
-		char		char_first = '?', *ch;
-		ListCell	 *lc;
-		List		 *quals = list_copy(node->ss.ps.qual);
+		bool param_first = true;
+		char char_first = '?', *ch;
+		ListCell  *lc;
+		List  *quals = list_copy(node->ss.ps.qual);
 
 		/* check if we have '?' already in the url -
 		 * append our parameters starting with '&', not '?' */
 		for(ch = url->data; *ch; ch++)
 			if('?' == *ch)
 			{
-				char_first	= '&';
+				char_first = '&';
 				break;
 			}
 
 		foreach (lc, quals)
 		{
-			ExprState		 *state = lfirst(lc);
+			ExprState  *state = lfirst(lc);
 
 			char *param = www_param((Node *) state->expr,
 					node->ss.ss_currentRelation->rd_att);
@@ -896,7 +896,7 @@ serialize_request_parameters(ForeignScanState* node, StringInfoData *url)
 				if (param_first)
 				{
 					appendStringInfoChar(url, char_first);
-					param_first	= false;
+					param_first = false;
 				}
 				else
 					appendStringInfoChar(url, '&');
@@ -913,33 +913,33 @@ serialize_request_parameters(ForeignScanState* node, StringInfoData *url)
 
 /*
  * xml_check_result_array
- *	Check current node to be of following structure:
- *	node
- *		subnode
- *			attr1 > cdata
- *			...
- *			attrN > cdata
- *		...
- *		subnode
- *			attr1 > cdata
- *			...
- *			attrN > cdata
- *	Also node names are checked to match result columns.
- *	At least one name must match. Matching columns must have only one text node child.
- *	All subnodes must have same name.
+ * Check current node to be of following structure:
+ * node
+ * subnode
+ * attr1 > cdata
+ * ...
+ * attrN > cdata
+ * ...
+ * subnode
+ * attr1 > cdata
+ * ...
+ * attrN > cdata
+ * Also node names are checked to match result columns.
+ * At least one name must match. Matching columns must have only one text node child.
+ * All subnodes must have same name.
  */
 static
 	bool
 xml_check_result_array(xmlNodePtr node, TupleDesc tuple_desc, xmlChar **attnames)
 {
-	xmlNodePtr	it		= NULL,
-							itc		= NULL;
-	const xmlChar *name	= NULL;
-	int			i,n		= 0;
-	bool		match	= false;
+	xmlNodePtr it = NULL,
+							itc = NULL;
+	const xmlChar *name = NULL;
+	int i,n = 0;
+	bool match = false;
 
 	if(NULL == node)
-		return	false;
+		return false;
 
 	/* check all node children have same name */
 	for( it = node->children; NULL != it; it = it->next )
@@ -948,14 +948,14 @@ xml_check_result_array(xmlNodePtr node, TupleDesc tuple_desc, xmlChar **attnames
 		{
 			case XML_ELEMENT_NODE:
 				if(NULL == name)
-					name	= it->name;
+					name = it->name;
 				else
 					/* check name of node to be the same */
 					if(1 != xmlStrEqual(name, it->name))
-						return	false;
+						return false;
 
 				/* check children */
-				n	= 0;
+				n = 0;
 				for( itc = it->children; NULL != itc; itc = itc->next )
 				{
 					/* check sub elements names to match result columns */
@@ -971,10 +971,10 @@ xml_check_result_array(xmlNodePtr node, TupleDesc tuple_desc, xmlChar **attnames
 							 {
 
 							 if(XML_TEXT_NODE != itc->children->type)
-							 return	false;
+							 return false;
 
 							 if(itc->children->next)
-							 return	false;
+							 return false;
 							 }
 							 */
 
@@ -986,9 +986,9 @@ xml_check_result_array(xmlNodePtr node, TupleDesc tuple_desc, xmlChar **attnames
 
 				/* none of the children match result columns */
 				if(0 == n)
-					return	false;
+					return false;
 				else
-					match	= true;
+					match = true;
 				break;
 			case XML_COMMENT_NODE:
 				continue;
@@ -1011,49 +1011,49 @@ xml_check_result_array(xmlNodePtr node, TupleDesc tuple_desc, xmlChar **attnames
 			case XML_XINCLUDE_START:
 			case XML_XINCLUDE_END:
 			case XML_DOCB_DOCUMENT_NODE:
-				return	false;
+				return false;
 		}
 	}
 
-	return	match;
+	return match;
 }
 
 /*
  * xml_get_result_array_in_doc
- *	search for a result in parsed xml
+ * search for a result in parsed xml
  */
 static
 	xmlNodePtr
 xml_get_result_array_in_doc(xmlDocPtr doc, TupleDesc tuple_desc)
 {
-	xmlNodePtr	suspect	= NULL,
-							it		= NULL;
-	List		*curr	= NULL,
-					*next	= NULL;
-	ListCell*	cell;
-	xmlChar**	attnames;
-	int			i;
+	xmlNodePtr suspect = NULL,
+							it = NULL;
+	List *curr = NULL,
+					*next = NULL;
+	ListCell* cell;
+	xmlChar** attnames;
+	int i;
 
 	if(NULL == doc)
-		return	NULL;
+		return NULL;
 
 	/* fill all document nodes as current list for check */
 	for( it = doc->children; NULL != it; it = it->next )
 	{
 		if(XML_ELEMENT_NODE != it->type)
 			continue;
-		curr	= lappend( curr, (void*)(it) );
+		curr = lappend( curr, (void*)(it) );
 	}
 
 	/* prepare attnames in xmlChar*, to save time for strings comparisons in xml_check_result_array */
-	attnames	= (xmlChar**)palloc(tuple_desc->natts * sizeof(xmlChar*));
+	attnames = (xmlChar**)palloc(tuple_desc->natts * sizeof(xmlChar*));
 	for( i=0; i<tuple_desc->natts; i++ )
-		attnames[i]	= xmlCharStrndup(tuple_desc->attrs[i]->attname.data, strlen(tuple_desc->attrs[i]->attname.data));
+		attnames[i] = xmlCharStrndup(tuple_desc->attrs[i]->attname.data, strlen(tuple_desc->attrs[i]->attname.data));
 
 	while(curr) {
 		foreach(cell, curr)
 		{
-			suspect	= (xmlNodePtr)(cell->data.ptr_value);
+			suspect = (xmlNodePtr)(cell->data.ptr_value);
 			switch (suspect->type)
 			{
 				case XML_ELEMENT_NODE:
@@ -1065,13 +1065,13 @@ xml_get_result_array_in_doc(xmlDocPtr doc, TupleDesc tuple_desc)
 						list_free(next);
 						for( i=0; i<tuple_desc->natts; i++ )
 							free(attnames[i]);
-						return	suspect;
+						return suspect;
 					}
 					for( it = suspect->children; NULL != it; it = it->next )
 					{
 						if(XML_ELEMENT_NODE != it->type)
 							continue;
-						next	= lappend( next, (void*)(it) );
+						next = lappend( next, (void*)(it) );
 					}
 					break;
 				default:
@@ -1080,35 +1080,35 @@ xml_get_result_array_in_doc(xmlDocPtr doc, TupleDesc tuple_desc)
 		}
 
 		list_free(curr);
-		curr	= next;
-		next	= NULL;
+		curr = next;
+		next = NULL;
 	}
 
 	/* free structures */
 	for( i=0; i<tuple_desc->natts; i++ )
 		free(attnames[i]);
 
-	return	NULL;
+	return NULL;
 }
 
 /*
  * json_check_result_array
- *	Currently checks all elements to be objects.
- *	And checks if at least one key in the object matches result columns.
+ * Currently checks all elements to be objects.
+ * And checks if at least one key in the object matches result columns.
  */
 static
 	bool
 json_check_result_array(JSONNode* root, TupleDesc tuple_desc)
 {
-	int	i,j,k,n;
+	int i,j,k,n;
 
 	for( i=0; i<root->length; i++ )
 	{
 		if(JSON_OBJECT_BEGIN != root->val.val_array[i].type)
-			return	false;
+			return false;
 
 		/* check if at least one key matchs result columns */
-		n	= 0;
+		n = 0;
 		for( j=0; j<root->val.val_array[i].length && 0==n; j++ )
 		{
 			for( k=0; k<tuple_desc->natts && 0==n; k++ )
@@ -1124,36 +1124,36 @@ json_check_result_array(JSONNode* root, TupleDesc tuple_desc)
 		}
 
 		if(0 == n)
-			return	false;
+			return false;
 	}
 
-	return	true;
+	return true;
 }
 
 /*
  * json_get_result_array_in_tree
- *	find the result array in json response structure
- *	check json_check_result_array for valid array description
+ * find the result array in json response structure
+ * check json_check_result_array for valid array description
  */
 static
 	JSONNode*
 json_get_result_array_in_tree(JSONNode* root, TupleDesc tuple_desc)
 {
-	JSONNode*	suspect	= NULL;
-	List		*curr	= list_make1(root),
-					*next	= NULL;
-	ListCell*	cell;
-	int			i;
+	JSONNode* suspect = NULL;
+	List *curr = list_make1(root),
+					*next = NULL;
+	ListCell* cell;
+	int i;
 
 	while(curr) {
 		foreach(cell, curr)
 		{
-			suspect	= (JSONNode*)(cell->data.ptr_value);
+			suspect = (JSONNode*)(cell->data.ptr_value);
 			switch (suspect->type)
 			{
 				case JSON_OBJECT_BEGIN:
 					for( i=0; i<suspect->length; i++ )
-						next	= lappend( next, (void*)(&(suspect->val.val_object[i])) );
+						next = lappend( next, (void*)(&(suspect->val.val_object[i])) );
 					break;
 				case JSON_ARRAY_BEGIN:
 					/* check array to be valid answer */
@@ -1162,10 +1162,10 @@ json_get_result_array_in_tree(JSONNode* root, TupleDesc tuple_desc)
 						/* free structure */
 						list_free(curr);
 						list_free(next);
-						return	suspect;
+						return suspect;
 					}
 					for( i=0; i<suspect->length; i++ )
-						next	= lappend( next, (void*)(&(suspect->val.val_array[i])) );
+						next = lappend( next, (void*)(&(suspect->val.val_array[i])) );
 					break;
 				case JSON_STRING:
 				case JSON_INT:
@@ -1184,18 +1184,18 @@ json_get_result_array_in_tree(JSONNode* root, TupleDesc tuple_desc)
 		}
 
 		list_free(curr);
-		curr	= next;
-		next	= NULL;
+		curr = next;
+		next = NULL;
 	}
 
-	return	NULL;
+	return NULL;
 }
 
 static
 	Datum
 make_text_data(StringInfoData *str)
 {
-	text *t	= (text*)palloc(VARHDRSZ + str->len);
+	text *t = (text*)palloc(VARHDRSZ + str->len);
 	SET_VARSIZE(t, VARHDRSZ + str->len);
 	memcpy(t->vl_dat, str->data, str->len);
 
@@ -1211,28 +1211,28 @@ static
 	Reply*
 call_response_deserialize_callback(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type, Datum opts_value, StringInfoData *buffer)
 {
-	int		res, i,j, natts;
-	StringInfoData	cmd;
-	Oid		opts_argtypes[2]	= { opts_type, TEXTOID };
-	Datum	opts_values[2];
-	Reply	*reply;
-	Relation		rel;
-	AttInMetadata	*attinmeta;
-	char			**values	= NULL,
-						**names	= NULL;
-	int16			*columns;
-	MemoryContext	mctxt = CurrentMemoryContext, spimctxt;
-	bool			use_libxml	= false;
-	xmltype			*xml;
+	int res, i,j, natts;
+	StringInfoData cmd;
+	Oid opts_argtypes[2] = { opts_type, TEXTOID };
+	Datum opts_values[2];
+	Reply *reply;
+	Relation rel;
+	AttInMetadata *attinmeta;
+	char **values = NULL,
+						**names = NULL;
+	int16 *columns;
+	MemoryContext mctxt = CurrentMemoryContext, spimctxt;
+	bool use_libxml = false;
+	xmltype *xml;
 
-	opts_values[0]	= opts_value;
+	opts_values[0] = opts_value;
 
 	rel = node->ss.ss_currentRelation;
 	attinmeta = TupleDescGetAttInMetadata(rel->rd_att);
 
 	SPI_connect_wrapper();
 
-	opts_values[1]	= make_text_data(buffer);
+	opts_values[1] = make_text_data(buffer);
 
 #ifdef USE_LIBXML
 	d("compiled with xml support, passing xml data type to callback");
@@ -1247,8 +1247,8 @@ call_response_deserialize_callback(ForeignScanState *node, WWW_fdw_options *opts
 		/* parses xml variable
 		 * it parses/checks xml string and returns casted variable
 		 */
-		xml	= xmlparse((text*)DatumGetPointer(opts_values[1]), XMLOPTION_DOCUMENT, true);
-		opts_values[1]	= XmlPGetDatum(xml);
+		xml = xmlparse((text*)DatumGetPointer(opts_values[1]), XMLOPTION_DOCUMENT, true);
+		opts_values[1] = XmlPGetDatum(xml);
 	}
 
 	/* do callback */
@@ -1257,7 +1257,7 @@ call_response_deserialize_callback(ForeignScanState *node, WWW_fdw_options *opts
 
 	d("calling response_deserialize_callback: '%s'", opts->response_deserialize_callback);
 
-	res	= SPI_execute_with_args(cmd.data, 2, opts_argtypes, opts_values, NULL, true, 0);
+	res = SPI_execute_with_args(cmd.data, 2, opts_argtypes, opts_values, NULL, true, 0);
 	if(0 > res)
 	{
 		ereport(ERROR,
@@ -1270,32 +1270,32 @@ call_response_deserialize_callback(ForeignScanState *node, WWW_fdw_options *opts
 
 	/* save result to output parameters */
 	/* allocate it in proper memory context */
-	reply		= (Reply*)SPI_palloc(sizeof(Reply));
-	reply->ntuples	= SPI_processed;
-	reply->tuple_index	= 0;
-	reply->options		= opts;
-	reply->opts_type	= opts_type;
-	reply->opts_value	= opts_value;
+	reply = (Reply*)SPI_palloc(sizeof(Reply));
+	reply->ntuples = SPI_processed;
+	reply->tuple_index = 0;
+	reply->options = opts;
+	reply->opts_type = opts_type;
+	reply->opts_value = opts_value;
 	/* copy tuples structure: there can be further calls to SPI_exec* */
-	reply->tuples	= (HeapTuple*)SPI_palloc(reply->ntuples * sizeof(HeapTuple));
+	reply->tuples = (HeapTuple*)SPI_palloc(reply->ntuples * sizeof(HeapTuple));
 
 	/* find correspondence between returned columns and columns we need to return */
 	natts = rel->rd_att->natts;
-	columns	= (int16*)palloc(natts * sizeof(int16));
-	names	= (char**)palloc(SPI_tuptable->tupdesc->natts * sizeof(char*));
+	columns = (int16*)palloc(natts * sizeof(int16));
+	names = (char**)palloc(SPI_tuptable->tupdesc->natts * sizeof(char*));
 	for( i=1; i<=SPI_tuptable->tupdesc->natts; i++ )
-		names[i-1]	= SPI_fname(SPI_tuptable->tupdesc, i);
+		names[i-1] = SPI_fname(SPI_tuptable->tupdesc, i);
 
 	/* find column places */
 	for( i=0; i<natts; i++ )
 	{
-		columns[i]	= -1;
+		columns[i] = -1;
 
 		for( j=0; j<SPI_tuptable->tupdesc->natts; j++ )
 		{
 			if(0 == namestrcmp(&rel->rd_att->attrs[i]->attname, names[j]))
 			{
-				columns[i]	= j+1;
+				columns[i] = j+1;
 				break;
 			}
 		}
@@ -1309,9 +1309,9 @@ call_response_deserialize_callback(ForeignScanState *node, WWW_fdw_options *opts
 		for( j=0; j<natts; j++ )
 		{
 			if(-1 == columns[j])
-				values[j]	= NULL;
+				values[j] = NULL;
 			else
-				values[j]	= SPI_getvalue(SPI_tuptable->vals[i], SPI_tuptable->tupdesc, columns[j]);
+				values[j] = SPI_getvalue(SPI_tuptable->vals[i], SPI_tuptable->tupdesc, columns[j]);
 		}
 
 		/* build tuple in proper memory context */
@@ -1330,7 +1330,7 @@ call_response_deserialize_callback(ForeignScanState *node, WWW_fdw_options *opts
 
 	SPI_finish_wrapper();
 
-	return	reply;
+	return reply;
 }
 
 /*
@@ -1342,10 +1342,10 @@ static
 	void
 get_www_fdw_options(WWW_fdw_options *opts, Oid *opts_type, Datum *opts_value)
 {
-	Datum	data[2];
-	bool	isnull[2]	= {false, false};
-	int		res;
-	char*	options[]	= {
+	Datum data[2];
+	bool isnull[2] = {false, false};
+	int res;
+	char* options[] = {
 		opts->uri,
 		opts->uri_select,
 		opts->uri_insert,
@@ -1372,16 +1372,16 @@ get_www_fdw_options(WWW_fdw_options *opts, Oid *opts_type, Datum *opts_value)
 		opts->cainfo,
 		opts->proxy
 	};
-	TupleDesc		tuple_desc;
-	AttInMetadata*	aim;
-	MemoryContext	mctxt = CurrentMemoryContext, spimctxt;
+	TupleDesc tuple_desc;
+	AttInMetadata* aim;
+	MemoryContext mctxt = CurrentMemoryContext, spimctxt;
 
 	SPI_connect_wrapper();
 	/* read following:
 	 * http://wiki.postgresql.org/wiki/Developer_FAQ#How_do_I_efficiently_access_information_in_system_catalogs_from_the_backend_code.3F
 	 * may be it makes sense reimplementing following select
 	 */
-	res	= SPI_execute("SELECT t.oid,t.typnamespace FROM pg_type t join pg_namespace ns ON t.typnamespace=ns.oid WHERE t.typname='wwwfdwoptions'", true, 0);
+	res = SPI_execute("SELECT t.oid,t.typnamespace FROM pg_type t join pg_namespace ns ON t.typnamespace=ns.oid WHERE t.typname='wwwfdwoptions'", true, 0);
 	if(0 > res)
 	{
 		ereport(ERROR,
@@ -1396,14 +1396,14 @@ get_www_fdw_options(WWW_fdw_options *opts, Oid *opts_type, Datum *opts_value)
 	{
 		heap_deform_tuple(*(SPI_tuptable->vals), SPI_tuptable->tupdesc, data, isnull);
 		/* Oid is typedef for unsigned int, value will be copied */
-		*opts_type	= (Oid)(data[0]);
+		*opts_type = (Oid)(data[0]);
 
-		tuple_desc	= TypeGetTupleDesc(*opts_type, NIL);
-		aim			= TupleDescGetAttInMetadata(tuple_desc);
+		tuple_desc = TypeGetTupleDesc(*opts_type, NIL);
+		aim = TupleDescGetAttInMetadata(tuple_desc);
 
 		/* switch to memory context before spi for saving value */
 		spimctxt = MemoryContextSwitchTo(mctxt);
-		*opts_value	= HeapTupleGetDatum( BuildTupleFromCStrings(aim, options) );
+		*opts_value = HeapTupleGetDatum( BuildTupleFromCStrings(aim, options) );
 		MemoryContextSwitchTo(spimctxt);
 
 		SPI_finish_wrapper();
@@ -1431,24 +1431,24 @@ static
 	void
 get_www_fdw_post_parameters(PostParameters *post, Oid *post_type, Datum *post_value)
 {
-	Datum	data[1];
-	bool	isnull[1]	= {false};
-	int		res;
-	char*	postparams[]	= {
+	Datum data[1];
+	bool isnull[1] = {false};
+	int res;
+	char* postparams[] = {
 		post->post ? "t" : "f",
 		post->data.data,
 		post->content_type.data
 	};
-	TupleDesc		tuple_desc;
-	AttInMetadata*	aim;
-	MemoryContext	mctxt = CurrentMemoryContext, spimctxt;
+	TupleDesc tuple_desc;
+	AttInMetadata* aim;
+	MemoryContext mctxt = CurrentMemoryContext, spimctxt;
 
 	SPI_connect_wrapper();
 	/* read following:
 	 * http://wiki.postgresql.org/wiki/Developer_FAQ#How_do_I_efficiently_access_information_in_system_catalogs_from_the_backend_code.3F
 	 * may be it makes sense reimplementing following select
 	 */
-	res	= SPI_execute("SELECT t.oid,t.typname,t.typnamespace FROM pg_type t join pg_namespace ns ON t.typnamespace=ns.oid WHERE t.typname='wwwfdwpostparameters'", true, 0);
+	res = SPI_execute("SELECT t.oid,t.typname,t.typnamespace FROM pg_type t join pg_namespace ns ON t.typnamespace=ns.oid WHERE t.typname='wwwfdwpostparameters'", true, 0);
 	if(0 > res)
 	{
 		ereport(ERROR,
@@ -1463,14 +1463,14 @@ get_www_fdw_post_parameters(PostParameters *post, Oid *post_type, Datum *post_va
 	{
 		heap_deform_tuple(*(SPI_tuptable->vals), SPI_tuptable->tupdesc, data, isnull);
 		/* Oid is typedef for unsigned int, value will be copied */
-		*post_type	= (Oid)(data[0]);
+		*post_type = (Oid)(data[0]);
 
-		tuple_desc	= TypeGetTupleDesc(*post_type, NIL);
-		aim			= TupleDescGetAttInMetadata(tuple_desc);
+		tuple_desc = TypeGetTupleDesc(*post_type, NIL);
+		aim = TupleDescGetAttInMetadata(tuple_desc);
 
 		/* switch to memory context before spi for saving value */
 		spimctxt = MemoryContextSwitchTo(mctxt);
-		*post_value	= HeapTupleGetDatum( BuildTupleFromCStrings(aim, postparams) );
+		*post_value = HeapTupleGetDatum( BuildTupleFromCStrings(aim, postparams) );
 		MemoryContextSwitchTo(spimctxt);
 
 		SPI_finish_wrapper();
@@ -1503,24 +1503,24 @@ json2string(JSONNode* json)
 	{
 		case JSON_OBJECT_BEGIN:
 		case JSON_ARRAY_BEGIN:
-			return	NULL;
+			return NULL;
 			break;
 		case JSON_STRING:
-			return	json->val.val_string;
+			return json->val.val_string;
 		case JSON_INT:
 			initStringInfo(&buf);
 			appendStringInfo(&buf, "%i", json->val.val_int);
-			return	buf.data;
+			return buf.data;
 		case JSON_FLOAT:
 			initStringInfo(&buf);
 			appendStringInfo(&buf, "%f", json->val.val_float);
-			return	buf.data;
+			return buf.data;
 		case JSON_NULL:
-			return	"null";
+			return "null";
 		case JSON_TRUE:
-			return	"true";
+			return "true";
 		case JSON_FALSE:
-			return	"false";
+			return "false";
 			/* for removing warning */
 		case JSON_NONE:
 		case JSON_KEY:
@@ -1528,7 +1528,7 @@ json2string(JSONNode* json)
 		case JSON_OBJECT_END:
 			break;
 	}
-	return	NULL;
+	return NULL;
 }
 
 /*
@@ -1539,20 +1539,20 @@ static
 	Reply*
 prepare_xml_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type, Datum opts_value, xmlDocPtr doc)
 {
-	xmlNodePtr	result	= NULL,
+	xmlNodePtr result = NULL,
 							it = NULL,
 							itc= NULL;
-	Relation	rel;
-	AttInMetadata	*attinmeta;
-	Reply			*reply;
-	xmlChar			**attnames;
-	int				i,j, natts;
-	char			**values	= NULL;
+	Relation rel;
+	AttInMetadata *attinmeta;
+	Reply *reply;
+	xmlChar **attnames;
+	int i,j, natts;
+	char **values = NULL;
 
 	rel = node->ss.ss_currentRelation;
 	attinmeta = TupleDescGetAttInMetadata(rel->rd_att);
 
-	result	= xml_get_result_array_in_doc(doc, rel->rd_att);
+	result = xml_get_result_array_in_doc(doc, rel->rd_att);
 	if(!result)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
@@ -1579,9 +1579,9 @@ prepare_xml_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type,
 
 	/* prepare result column names in xmlChar* for proper comparison */
 	natts = rel->rd_att->natts;
-	attnames	= (xmlChar**)palloc(natts * sizeof(xmlChar*));
+	attnames = (xmlChar**)palloc(natts * sizeof(xmlChar*));
 	for (i = 0; i < natts; i++)
-		attnames[i]	= xmlCharStrndup(rel->rd_att->attrs[i]->attname.data, strlen(rel->rd_att->attrs[i]->attname.data));
+		attnames[i] = xmlCharStrndup(rel->rd_att->attrs[i]->attname.data, strlen(rel->rd_att->attrs[i]->attname.data));
 
 	/* find column places */
 	values = (char **) palloc(sizeof(char *) * natts);
@@ -1594,9 +1594,9 @@ prepare_xml_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type,
 					break;
 
 			if(itc)
-				values[i]	= (char*)itc->children->content;
+				values[i] = (char*)itc->children->content;
 			else
-				values[i]	= NULL;
+				values[i] = NULL;
 		}
 
 		reply->tuples[j] = BuildTupleFromCStrings(attinmeta, values);
@@ -1605,7 +1605,7 @@ prepare_xml_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type,
 
 	pfree(attnames);
 
-	return	reply;
+	return reply;
 }
 
 /*
@@ -1616,17 +1616,17 @@ static
 	Reply*
 prepare_json_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type, Datum opts_value, JSONNode *root)
 {
-	JSONNode		*result, json_obj;
-	Relation		rel;
-	AttInMetadata	*attinmeta;
-	Reply			*reply;
-	int				i,j,k, natts;
-	char			**values	= NULL;
+	JSONNode *result, json_obj;
+	Relation rel;
+	AttInMetadata *attinmeta;
+	Reply *reply;
+	int i,j,k, natts;
+	char **values = NULL;
 
 	rel = node->ss.ss_currentRelation;
 	attinmeta = TupleDescGetAttInMetadata(rel->rd_att);
 
-	result	= json_get_result_array_in_tree(root, rel->rd_att);
+	result = json_get_result_array_in_tree(root, rel->rd_att);
 	if(!result)
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
@@ -1641,8 +1641,8 @@ prepare_json_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type
 	reply->options = opts;
 	reply->opts_type = opts_type;
 	reply->opts_value = opts_value;
-	reply->ntuples	= result->length;
-	reply->tuples	= 0 == reply->ntuples ?
+	reply->ntuples = result->length;
+	reply->tuples = 0 == reply->ntuples ?
 		NULL :
 		(HeapTuple*)palloc(result->length * sizeof(HeapTuple));
 
@@ -1659,38 +1659,38 @@ prepare_json_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type
 					break;
 
 			if(k < json_obj.length)
-				values[j]	= json2string(&(json_obj.val.val_object[k]));
+				values[j] = json2string(&(json_obj.val.val_object[k]));
 			else
-				values[j]	= NULL;
+				values[j] = NULL;
 		}
 
 		reply->tuples[i] = BuildTupleFromCStrings(attinmeta, values);
 	}
 	pfree(values);
 
-	return	reply;
+	return reply;
 }
 
 /*
  * www_begin
- *	 Query search API and setup result
+ *  Query search API and setup result
  */
 	static void
 www_begin(ForeignScanState *node, int eflags)
 {
-	WWW_fdw_options	*opts;
-	CURL			*curl;
-	char			curl_error_buffer[CURL_ERROR_SIZE+1]	= {0};
-	CURLcode		ret;
-	StringInfoData	url;
-	json_parser		json_parserr;
+	WWW_fdw_options *opts;
+	CURL *curl;
+	char curl_error_buffer[CURL_ERROR_SIZE+1] = {0};
+	CURLcode ret;
+	StringInfoData url;
+	json_parser json_parserr;
 	json_parser_dom json_dom;
-	xmlParserCtxtPtr	xml_parserr	= NULL;
-	StringInfoData	buffer;
-	Oid				opts_type	= 0;
-	Datum			opts_value	= 0;
-	PostParameters	post;
-	struct curl_slist	*curl_opts = NULL;
+	xmlParserCtxtPtr xml_parserr = NULL;
+	StringInfoData buffer;
+	Oid opts_type = 0;
+	Datum opts_value = 0;
+	PostParameters post;
+	struct curl_slist *curl_opts = NULL;
 
 	d("www_begin routine");
 
@@ -1702,7 +1702,7 @@ www_begin(ForeignScanState *node, int eflags)
 
 	d("www_begin routine, not explain only call");
 
-	opts	= (WWW_fdw_options*)palloc(sizeof(WWW_fdw_options));
+	opts = (WWW_fdw_options*)palloc(sizeof(WWW_fdw_options));
 	get_options( RelationGetRelid(node->ss.ss_currentRelation), opts );
 
 	initStringInfo(&url);
@@ -1836,7 +1836,7 @@ www_begin(ForeignScanState *node, int eflags)
 		}
 		else
 		{
-			JSONNode	*root	= json_result_tree(&json_parserr);
+			JSONNode *root = json_result_tree(&json_parserr);
 
 			if(!root)
 				ereport(ERROR,
@@ -1865,14 +1865,14 @@ www_begin(ForeignScanState *node, int eflags)
 			 * and save it for further processing in results iterations
 			 */
 
-			xmlDocPtr	doc		= NULL;
-			int			res;
+			xmlDocPtr doc = NULL;
+			int res;
 
 			/* there is no more input, indicate the parsing is finished */
 			xmlParseChunk(xml_parserr, curl_error_buffer, 0, 1);
 
-			doc	= xml_parserr->myDoc;
-			res	= xml_parserr->wellFormed;
+			doc = xml_parserr->myDoc;
+			res = xml_parserr->wellFormed;
 
 			xmlFreeParserCtxt(xml_parserr);
 
@@ -1903,13 +1903,13 @@ call_response_iterate_callback(ForeignScanState *node, WWW_fdw_options *opts, Oi
 {
 	int res;
 	StringInfoData cmd;
-	Oid		opts_argtypes[2] = {
+	Oid opts_argtypes[2] = {
 		opts_type,
 		/* doesn't work here, type isn't set for it: */
 		/*HeapTupleGetOid(tuple)*/
 		node->ss.ss_currentRelation->rd_att->tdtypeid
 	};
-	Datum	opts_values[2] = { opts_value, HeapTupleGetDatum(tuple) };
+	Datum opts_values[2] = { opts_value, HeapTupleGetDatum(tuple) };
 	HeapTuple rtuple = NULL;
 
 	SPI_connect_wrapper();
@@ -1918,7 +1918,7 @@ call_response_iterate_callback(ForeignScanState *node, WWW_fdw_options *opts, Oi
 	initStringInfo(&cmd);
 	appendStringInfo(&cmd, "SELECT * FROM %s($1,$2)", opts->response_iterate_callback);
 
-	res	= SPI_execute_with_args(cmd.data, 2, opts_argtypes, opts_values, NULL, true, 0);
+	res = SPI_execute_with_args(cmd.data, 2, opts_argtypes, opts_values, NULL, true, 0);
 	if(0 > res)
 	{
 		ereport(ERROR,
@@ -1959,15 +1959,15 @@ call_response_iterate_callback(ForeignScanState *node, WWW_fdw_options *opts, Oi
 
 /*
  * www_iterate
- *	 return row per each call
+ *  return row per each call
  */
 	static TupleTableSlot *
 www_iterate(ForeignScanState *node)
 {
-	TupleTableSlot	*slot	= node->ss.ss_ScanTupleSlot;
-	Reply			*reply	= (Reply*)node->fdw_state;
-	HeapTuple		tuple;
-	MemoryContext	oldcontext;
+	TupleTableSlot *slot = node->ss.ss_ScanTupleSlot;
+	Reply *reply = (Reply*)node->fdw_state;
+	HeapTuple tuple;
+	MemoryContext oldcontext;
 
 	d("www_iterate routine");
 
@@ -2008,11 +2008,11 @@ www_iterate(ForeignScanState *node)
 	static void
 www_rescan(ForeignScanState *node)
 {
-	Reply		 *reply = (Reply *) node->fdw_state;
+	Reply  *reply = (Reply *) node->fdw_state;
 
 	d("www_rescan routine");
 
-	reply->tuple_index	= 0;
+	reply->tuple_index = 0;
 }
 
 /*
@@ -2027,14 +2027,14 @@ www_end(ForeignScanState *node)
 
 /*
  * json_write_data_to_parser
- *	parse json chunk by chunk
+ * parse json chunk by chunk
  */
 	static size_t
 json_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 {
-	int			segsize = size * nmemb;
+	int segsize = size * nmemb;
 	json_parser *parser = (json_parser *) userp;
-	int			ret;
+	int ret;
 
 	ret = json_parser_string(parser, buffer, segsize, NULL);
 	if (ret)
@@ -2048,14 +2048,14 @@ json_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 
 /*
  * xml_write_data_to_parser
- *	parse xml chunk by chunk
+ * parse xml chunk by chunk
  */
 	static size_t
 xml_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 {
-	int			segsize = size * nmemb;
+	int segsize = size * nmemb;
 	xmlParserCtxtPtr *ctxt = (xmlParserCtxtPtr*) userp;
-	int			ret;
+	int ret;
 
 	if(NULL == *ctxt) {
 		/* parser wasn't initialized,
@@ -2071,7 +2071,7 @@ xml_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 		 */
 		*ctxt = xmlCreatePushParserCtxt(NULL, NULL, buffer, segsize, NULL);
 		if (*ctxt == NULL) {
-			xmlErrorPtr	err	= xmlCtxtGetLastError(*ctxt);
+			xmlErrorPtr err = xmlCtxtGetLastError(*ctxt);
 			ereport(ERROR,
 					(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
 					 errmsg("Can't parse server's xml response: %s", err ? err->message : "")
@@ -2084,7 +2084,7 @@ xml_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 	ret = xmlParseChunk(*ctxt, buffer, segsize, 0);
 	if (ret)
 	{
-		xmlErrorPtr	err	= xmlCtxtGetLastError(*ctxt);
+		xmlErrorPtr err = xmlCtxtGetLastError(*ctxt);
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
 				 errmsg("Can't parse server's xml response, parser error code: %i, message: %s", ret, err ? err->message : "")
@@ -2096,13 +2096,13 @@ xml_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 
 /*
  * write_data_to_buffer
- *	accumulate json response in buffer for further processing
+ * accumulate json response in buffer for further processing
  */
 	static size_t
 write_data_to_buffer(void *buffer, size_t size, size_t nmemb, void *userp)
 {
-	StringInfoData	*b	= (StringInfoData*)userp;
-	int				s	= size*nmemb;
+	StringInfoData *b = (StringInfoData*)userp;
+	int s = size*nmemb;
 
 	appendBinaryStringInfo(b, buffer, s);
 
@@ -2116,11 +2116,11 @@ write_data_to_buffer(void *buffer, size_t size, size_t nmemb, void *userp)
 	static void
 get_options(Oid foreigntableid, WWW_fdw_options *opts)
 {
-	ForeignTable	*f_table;
-	ForeignServer	*f_server;
-	UserMapping	*f_mapping;
-	List		*options;
-	ListCell	*lc;
+	ForeignTable *f_table;
+	ForeignServer *f_server;
+	UserMapping *f_mapping;
+	List *options;
+	ListCell *lc;
 
 	/*
 	 * Extract options from FDW objects.
@@ -2135,28 +2135,28 @@ get_options(Oid foreigntableid, WWW_fdw_options *opts)
 	options = list_concat(options, f_mapping->options);
 
 	/* init options */
-	opts->uri	= NULL;
-	opts->uri_select	= NULL;
-	opts->uri_insert	= NULL;
-	opts->uri_delete	= NULL;
-	opts->uri_update	= NULL;
-	opts->uri_callback	= NULL;
-	opts->method_select	= NULL;
-	opts->method_insert	= NULL;
-	opts->method_delete	= NULL;
-	opts->method_update	= NULL;
-	opts->request_user_agent	= NULL;
-	opts->request_serialize_callback	= NULL;
-	opts->request_serialize_type	= NULL;
-	opts->request_serialize_human_readable	= NULL;
-	opts->response_type	= NULL;
-	opts->response_deserialize_callback	= NULL;
-	opts->response_iterate_callback		= NULL;
+	opts->uri = NULL;
+	opts->uri_select = NULL;
+	opts->uri_insert = NULL;
+	opts->uri_delete = NULL;
+	opts->uri_update = NULL;
+	opts->uri_callback = NULL;
+	opts->method_select = NULL;
+	opts->method_insert = NULL;
+	opts->method_delete = NULL;
+	opts->method_update = NULL;
+	opts->request_user_agent = NULL;
+	opts->request_serialize_callback = NULL;
+	opts->request_serialize_type = NULL;
+	opts->request_serialize_human_readable = NULL;
+	opts->response_type = NULL;
+	opts->response_deserialize_callback = NULL;
+	opts->response_iterate_callback = NULL;
 
-	opts->ssl_cert				 = NULL;
-	opts->ssl_key					 = NULL;
-	opts->cainfo					 = NULL;
-	opts->proxy						 = NULL;
+	opts->ssl_cert  = NULL;
+	opts->ssl_key  = NULL;
+	opts->cainfo  = NULL;
+	opts->proxy  = NULL;
 
 	/* Loop through the options, and get the server/port */
 	foreach(lc, options)
@@ -2164,52 +2164,52 @@ get_options(Oid foreigntableid, WWW_fdw_options *opts)
 		DefElem *def = (DefElem *) lfirst(lc);
 
 		if (strcmp(def->defname, "uri") == 0)
-			opts->uri	= defGetString(def);
+			opts->uri = defGetString(def);
 
 		if (strcmp(def->defname, "uri_select") == 0)
-			opts->uri_select	= defGetString(def);
+			opts->uri_select = defGetString(def);
 
 		if (strcmp(def->defname, "uri_insert") == 0)
-			opts->uri_insert	= defGetString(def);
+			opts->uri_insert = defGetString(def);
 
 		if (strcmp(def->defname, "uri_delete") == 0)
-			opts->uri_delete	= defGetString(def);
+			opts->uri_delete = defGetString(def);
 
 		if (strcmp(def->defname, "uri_update") == 0)
-			opts->uri_update	= defGetString(def);
+			opts->uri_update = defGetString(def);
 
 		if (strcmp(def->defname, "method_select") == 0)
-			opts->method_select	= defGetString(def);
+			opts->method_select = defGetString(def);
 
 		if (strcmp(def->defname, "method_insert") == 0)
-			opts->method_insert	= defGetString(def);
+			opts->method_insert = defGetString(def);
 
 		if (strcmp(def->defname, "method_delete") == 0)
-			opts->method_delete	= defGetString(def);
+			opts->method_delete = defGetString(def);
 
 		if (strcmp(def->defname, "method_update") == 0)
-			opts->method_update	= defGetString(def);
+			opts->method_update = defGetString(def);
 
 		if (strcmp(def->defname, "request_user_agent") == 0)
-			opts->request_user_agent	= defGetString(def);
+			opts->request_user_agent = defGetString(def);
 
 		if (strcmp(def->defname, "request_serialize_callback") == 0)
-			opts->request_serialize_callback	= defGetString(def);
+			opts->request_serialize_callback = defGetString(def);
 
 		if (strcmp(def->defname, "request_serialize_type") == 0)
-			opts->request_serialize_type	= defGetString(def);
+			opts->request_serialize_type = defGetString(def);
 
 		if (strcmp(def->defname, "request_serialize_human_readable") == 0)
-			opts->request_serialize_human_readable	= defGetString(def);
+			opts->request_serialize_human_readable = defGetString(def);
 
 		if (strcmp(def->defname, "response_type") == 0)
-			opts->response_type	= defGetString(def);
+			opts->response_type = defGetString(def);
 
 		if (strcmp(def->defname, "response_deserialize_callback") == 0)
-			opts->response_deserialize_callback	= defGetString(def);
+			opts->response_deserialize_callback = defGetString(def);
 
 		if (strcmp(def->defname, "response_iterate_callback") == 0)
-			opts->response_iterate_callback	= defGetString(def);
+			opts->response_iterate_callback = defGetString(def);
 
 		if (strcmp(def->defname, "ssl_cert") == 0)
 			opts->ssl_cert = defGetString(def);
@@ -2225,22 +2225,22 @@ get_options(Oid foreigntableid, WWW_fdw_options *opts)
 	}
 
 	/* Default values, if required */
-	if (!opts->uri_select) opts->uri_select	= "";
-	if (!opts->uri_insert) opts->uri_insert	= "";
-	if (!opts->uri_delete) opts->uri_delete	= "";
-	if (!opts->uri_update) opts->uri_update	= "";
+	if (!opts->uri_select) opts->uri_select = "";
+	if (!opts->uri_insert) opts->uri_insert = "";
+	if (!opts->uri_delete) opts->uri_delete = "";
+	if (!opts->uri_update) opts->uri_update = "";
 
-	if (!opts->method_select) opts->method_select	= "GET";
-	if (!opts->method_insert) opts->method_insert	= "PUT";
-	if (!opts->method_delete) opts->method_delete	= "DELETE";
-	if (!opts->method_update) opts->method_update	= "POST";
+	if (!opts->method_select) opts->method_select = "GET";
+	if (!opts->method_insert) opts->method_insert = "PUT";
+	if (!opts->method_delete) opts->method_delete = "DELETE";
+	if (!opts->method_update) opts->method_update = "POST";
 
-	if (!opts->request_user_agent) opts->request_user_agent	= "www_fdw postgres extension";
+	if (!opts->request_user_agent) opts->request_user_agent = "www_fdw postgres extension";
 
-	if (!opts->request_serialize_type) opts->request_serialize_type	= "log";
-	if (!opts->request_serialize_human_readable) opts->request_serialize_human_readable	= "0";
+	if (!opts->request_serialize_type) opts->request_serialize_type = "log";
+	if (!opts->request_serialize_human_readable) opts->request_serialize_human_readable = "0";
 
-	if (!opts->response_type) opts->response_type	= "json";
+	if (!opts->response_type) opts->response_type = "json";
 
 	/* Check we have mandatory options */
 	if (!opts->uri)
@@ -2254,7 +2254,7 @@ static
 	void
 SPI_connect_wrapper()
 {
-	int res	= SPI_connect();
+	int res = SPI_connect();
 	if(SPI_OK_CONNECT != res)
 	{
 		ereport(ERROR,
@@ -2270,7 +2270,7 @@ static
 	void
 SPI_finish_wrapper()
 {
-	int res	= SPI_finish();
+	int res = SPI_finish();
 	if(SPI_OK_FINISH != res)
 	{
 		ereport(ERROR,
