@@ -1342,8 +1342,8 @@ static
 void
 get_www_fdw_options(WWW_fdw_options *opts, Oid *opts_type, Datum *opts_value)
 {
-	Datum	data[1];
-	bool	isnull[1]	= {false};
+	Datum	data[2];
+	bool	isnull[2]	= {false, false};
 	int		res;
 	char*	options[]	= {
 		opts->uri,
@@ -1381,7 +1381,7 @@ get_www_fdw_options(WWW_fdw_options *opts, Oid *opts_type, Datum *opts_value)
      * http://wiki.postgresql.org/wiki/Developer_FAQ#How_do_I_efficiently_access_information_in_system_catalogs_from_the_backend_code.3F
      * may be it makes sense reimplementing following select
      */
-	res	= SPI_execute("SELECT t.oid,t.typname,t.typnamespace FROM pg_type t join pg_namespace ns ON t.typnamespace=ns.oid WHERE t.typname='wwwfdwoptions'", true, 0);
+	res	= SPI_execute("SELECT t.oid,t.typnamespace FROM pg_type t join pg_namespace ns ON t.typnamespace=ns.oid WHERE t.typname='wwwfdwoptions'", true, 0);
 	if(0 > res)
 	{
 		ereport(ERROR,
@@ -1991,8 +1991,10 @@ www_iterate(ForeignScanState *node)
 			reply->opts_value,
 			reply->tuples[reply->tuple_index++]);
 	}
-	else
-		tuple = heap_copytuple(reply->tuples[reply->tuple_index++]);
+	else {
+		tuple = (HeapTuple) palloc(HEAPTUPLESIZE);
+		heap_copytuple_with_tuple(reply->tuples[reply->tuple_index++], tuple);
+	}
 	MemoryContextSwitchTo(oldcontext);
 	ExecStoreTuple(tuple, slot, InvalidBuffer, true);
 
