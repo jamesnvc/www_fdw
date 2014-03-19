@@ -1,0 +1,4 @@
+Session.vim
+*.o
+*.so
+sql/www_fdw--*.sql
