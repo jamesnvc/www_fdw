@@ -69,10 +69,10 @@ static struct WWW_fdw_option valid_options[] =
 	{ "response_deserialize_callback",	ForeignServerRelationId },
 	{ "response_iterate_callback",	ForeignServerRelationId },
 
-	{ "ssl_cert",   ForeignServerRelationId },
-	{ "ssl_key",    ForeignServerRelationId },
+	{ "ssl_cert",		ForeignServerRelationId },
+	{ "ssl_key",		ForeignServerRelationId },
 	{ "cainfo", ForeignServerRelationId },
-	{ "proxy",  ForeignServerRelationId },
+	{ "proxy",	ForeignServerRelationId },
 
 	/* Sentinel */
 	{ NULL,			InvalidOid }
@@ -97,10 +97,10 @@ typedef struct	WWW_fdw_options
 	char*	response_type;
 	char*	response_deserialize_callback;
 	char*	response_iterate_callback;
-	char*   ssl_cert;
-	char*   ssl_key;
-	char*   cainfo;
-	char*   proxy;
+	char*		ssl_cert;
+	char*		ssl_key;
+	char*		cainfo;
+	char*		proxy;
 } WWW_fdw_options;
 
 typedef struct Reply
@@ -109,8 +109,8 @@ typedef struct Reply
 	uint32			ntuples;	/* number of results */
 	int				tuple_index;
 	WWW_fdw_options	*options;
-	Oid			  	opts_type;
-	Datum		  	opts_value;
+	Oid					opts_type;
+	Datum				opts_value;
 } Reply;
 
 typedef struct PostParameters
@@ -136,17 +136,17 @@ PG_FUNCTION_INFO_V1(www_fdw_validator);
  * FDW callback routines
  */
 static void www_get_foreign_rel_size(PlannerInfo *root,
-								  RelOptInfo *baserel,
-								  Oid foreigntableid);
+		RelOptInfo *baserel,
+		Oid foreigntableid);
 static void www_get_foreign_paths(PlannerInfo *root,
-								RelOptInfo *baserel,
-								Oid foreigntableid);
+		RelOptInfo *baserel,
+		Oid foreigntableid);
 static ForeignScan *www_get_foreign_plan(PlannerInfo *root,
-									   RelOptInfo *baserel,
-									   Oid foreigntableid,
-									   ForeignPath *best_path,
-									   List *tlist,
-									   List *scan_clauses);
+		RelOptInfo *baserel,
+		Oid foreigntableid,
+		ForeignPath *best_path,
+		List *tlist,
+		List *scan_clauses);
 static void www_explain_foreign_scan(ForeignScanState *node, ExplainState *es);
 static void www_explain(ForeignScanState *node, ExplainState *es);
 static void www_begin(ForeignScanState *node, int eflags);
@@ -170,15 +170,15 @@ static void SPI_finish_wrapper(void);
  * parse_parameter
  * parse single passed parameter
  */
-static bool
+	static bool
 parse_parameter(char* name, char** var, DefElem* param)
 {
 	if( 0 == strcmp(param->defname, name) )
 	{
 		if (*var)
 			ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR),
-				errmsg("conflicting or redundant options: %s (%s)", name, defGetString(param))
-				));
+						errmsg("conflicting or redundant options: %s (%s)", name, defGetString(param))
+						));
 
 		*var = defGetString(param);
 		return	true;
@@ -190,7 +190,7 @@ parse_parameter(char* name, char** var, DefElem* param)
  * www_fdw_validator
  * FDW callback realization
  */
-Datum
+	Datum
 www_fdw_validator(PG_FUNCTION_ARGS)
 {
 	List		*options_list = untransformRelOptions(PG_GETARG_DATUM(0));
@@ -213,10 +213,10 @@ www_fdw_validator(PG_FUNCTION_ARGS)
 	char		*response_type	= NULL;
 	char		*response_deserialize_callback	= NULL;
 	char		*response_iterate_callback	= NULL;
-	char            *ssl_cert      = NULL;
-	char            *ssl_key       = NULL;
-	char            *cainfo        = NULL;
-	char            *proxy         = NULL;
+	char						*ssl_cert			 = NULL;
+	char						*ssl_key			 = NULL;
+	char						*cainfo				 = NULL;
+	char						*proxy				 = NULL;
 
 	d("www_fdw_validator routine");
 
@@ -226,7 +226,7 @@ www_fdw_validator(PG_FUNCTION_ARGS)
 	 */
 	foreach(cell, options_list)
 	{
-		DefElem	   *def = (DefElem *) lfirst(cell);
+		DefElem		 *def = (DefElem *) lfirst(cell);
 
 		if (!www_is_valid_option(def->defname, catalog))
 		{
@@ -242,14 +242,14 @@ www_fdw_validator(PG_FUNCTION_ARGS)
 			{
 				if (catalog == opt->optcontext)
 					appendStringInfo(&buf, "%s%s", (buf.len > 0) ? ", " : "",
-							 opt->optname);
+							opt->optname);
 			}
 
 			ereport(ERROR,
-				(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
-				errmsg("invalid option \"%s\"", def->defname),
-				errhint("Valid options in this context are: %s", buf.len ? buf.data : "<none>")
-				));
+					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
+					 errmsg("invalid option \"%s\"", def->defname),
+					 errhint("Valid options in this context are: %s", buf.len ? buf.data : "<none>")
+					));
 		}
 
 		if(parse_parameter("uri", &uri, def)) continue;
@@ -268,30 +268,30 @@ www_fdw_validator(PG_FUNCTION_ARGS)
 		if(parse_parameter("request_serialize_human_readable", &request_serialize_human_readable, def))
 		{
 			if(
-				0 != strcmp(request_serialize_human_readable, "0")
-				&&
-				0 != strcmp(request_serialize_human_readable, "1")
-			)
+					0 != strcmp(request_serialize_human_readable, "0")
+					&&
+					0 != strcmp(request_serialize_human_readable, "1")
+				)
 			{
 				ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR),
-					errmsg("invalid value for request_serialize_human_readable: %s (0 or 1 are available only)", request_serialize_human_readable)
-					));
+							errmsg("invalid value for request_serialize_human_readable: %s (0 or 1 are available only)", request_serialize_human_readable)
+							));
 			}
 			continue;
 		}
 
 		if(parse_parameter("response_type", &response_type, def)) {
 			if(
-				0 != strcmp(response_type, "json")
-				&&
-				0 != strcmp(response_type, "xml")
-				&&
-				0 != strcmp(response_type, "other")
-			)
+					0 != strcmp(response_type, "json")
+					&&
+					0 != strcmp(response_type, "xml")
+					&&
+					0 != strcmp(response_type, "other")
+				)
 			{
 				ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR),
-					errmsg("invalid value for response_type: %s (json, xml, other are available only)", response_type)
-					));
+							errmsg("invalid value for response_type: %s (json, xml, other are available only)", response_type)
+							));
 			}
 			continue;
 		};
@@ -310,7 +310,7 @@ www_fdw_validator(PG_FUNCTION_ARGS)
  * Check if the provided option is one of the valid options.
  * context is the Oid of the catalog holding the object the option is for.
  */
-static bool
+	static bool
 www_is_valid_option(const char *option, Oid context)
 {
 	struct WWW_fdw_option *opt;
@@ -327,7 +327,7 @@ www_is_valid_option(const char *option, Oid context)
  * www_fdw_handler
  * setup FDW handlers/callbacks
  */
-Datum
+	Datum
 www_fdw_handler(PG_FUNCTION_ARGS)
 {
 	FdwRoutine *fdwroutine = makeNode(FdwRoutine);
@@ -336,9 +336,9 @@ www_fdw_handler(PG_FUNCTION_ARGS)
 	 * Anything except Begin/Iterate is blank so far,
 	 * but FDW interface assumes all valid function pointers.
 	 */
-    fdwroutine->GetForeignRelSize = www_get_foreign_rel_size;
-    fdwroutine->GetForeignPaths = www_get_foreign_paths;
-    fdwroutine->GetForeignPlan = www_get_foreign_plan;
+	fdwroutine->GetForeignRelSize = www_get_foreign_rel_size;
+	fdwroutine->GetForeignPaths = www_get_foreign_paths;
+	fdwroutine->GetForeignPlan = www_get_foreign_plan;
 	fdwroutine->ExplainForeignScan = www_explain;
 	fdwroutine->BeginForeignScan = www_begin;
 	fdwroutine->IterateForeignScan = www_iterate;
@@ -352,11 +352,11 @@ www_fdw_handler(PG_FUNCTION_ARGS)
  * percent_encode
  * used for url encoding
  */
-static char *
+	static char *
 percent_encode(unsigned char *s, int srclen)
 {
 	unsigned char  *end;
-	StringInfoData  buf;
+	StringInfoData	buf;
 	int				len;
 
 	initStringInfo(&buf);
@@ -376,10 +376,10 @@ percent_encode(unsigned char *s, int srclen)
 		if (len == 1)
 		{
 			if (('0' <= s[0] && s[0] <= '9') ||
-				('A' <= s[0] && s[0] <= 'Z') ||
-				('a' <= s[0] && s[0] <= 'z') ||
-				(s[0] == '-') || (s[0] == '.') ||
-				(s[0] == '_') || (s[0] == '~'))
+					('A' <= s[0] && s[0] <= 'Z') ||
+					('a' <= s[0] && s[0] <= 'z') ||
+					(s[0] == '-') || (s[0] == '.') ||
+					(s[0] == '_') || (s[0] == '~'))
 			{
 				appendStringInfoChar(&buf, s[0]);
 				continue;
@@ -400,148 +400,148 @@ percent_encode(unsigned char *s, int srclen)
 
 /*
  * www_param
- *  check and create column=value string for column=value criteria in query
- *  raise error for operators differ from '='
- *  raise error for operators with not 2 arguments
+ *	check and create column=value string for column=value criteria in query
+ *	raise error for operators differ from '='
+ *	raise error for operators with not 2 arguments
  */
-static char *
+	static char *
 www_param(Node *node, TupleDesc tupdesc)
 {
 	if (node == NULL)
 		return NULL;
 
 	if (
-        /* col=false
-            :qual (
-                {BOOLEXPR
-                :boolop not
-                :args (
-                {VAR
-                :varno 1
-                :varattno 2
-                :vartype 16
-                :vartypmod -1
-                :varcollid 0
-                :varlevelsup 0
-                :varnoold 1
-                :varoattno 2
-                :location 33
-                }
-                )
-                :location -1
-                }
-            )
-        */
-        IsA(node, BoolExpr)
-    ) {
-        BoolExpr    *op = (BoolExpr*)node;
-        if(
-            NOT_EXPR == op->boolop
-            &&
-		    1 == list_length(op->args)
-        ) {
-		    Node    *arg = list_nth(op->args, 0);
-            if( IsA(arg, Var) ) {
-                char    *key;
-		        StringInfoData	buf;
-                Index   varattno = ((Var *) arg)->varattno;
-                Assert(0 < varattno && varattno <= tupdesc->natts);
-                key = NameStr(tupdesc->attrs[varattno - 1]->attname);
+			/* col=false
+				 :qual (
+				 {BOOLEXPR
+				 :boolop not
+				 :args (
+				 {VAR
+				 :varno 1
+				 :varattno 2
+				 :vartype 16
+				 :vartypmod -1
+				 :varcollid 0
+				 :varlevelsup 0
+				 :varnoold 1
+				 :varoattno 2
+				 :location 33
+				 }
+				 )
+				 :location -1
+				 }
+				 )
+				 */
+		IsA(node, BoolExpr)
+			) {
+				BoolExpr		*op = (BoolExpr*)node;
+				if(
+						NOT_EXPR == op->boolop
+						&&
+						1 == list_length(op->args)
+					) {
+					Node		*arg = list_nth(op->args, 0);
+					if( IsA(arg, Var) ) {
+						char		*key;
+						StringInfoData	buf;
+						Index		varattno = ((Var *) arg)->varattno;
+						Assert(0 < varattno && varattno <= tupdesc->natts);
+						key = NameStr(tupdesc->attrs[varattno - 1]->attname);
 
-                initStringInfo(&buf);
-                appendStringInfo(&buf, "%s=%s", percent_encode((unsigned char *) key, -1),
-                    percent_encode((unsigned char*)"false", -1));
-		        return buf.data;
-            }
-            else {
-			    ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR), errmsg("NOT operator with not a var detected")));
-            }
-        }
-    }
+						initStringInfo(&buf);
+						appendStringInfo(&buf, "%s=%s", percent_encode((unsigned char *) key, -1),
+								percent_encode((unsigned char*)"false", -1));
+						return buf.data;
+					}
+					else {
+						ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR), errmsg("NOT operator with not a var detected")));
+					}
+				}
+			}
 	else if (
-        /* col=true
-              :qual (
-                 {VAR
-                 :varno 1
-                 :varattno 2
-                 :vartype 16
-                 :vartypmod -1
-                 :varcollid 0
-                 :varlevelsup 0
-                 :varnoold 1
-                 :varoattno 2
-                 :location 33
-                 }
-              )
-        */
-        IsA(node, Var)
-    ) {
-        char    *key;
+			/* col=true
+				 :qual (
+				 {VAR
+				 :varno 1
+				 :varattno 2
+				 :vartype 16
+				 :vartypmod -1
+				 :varcollid 0
+				 :varlevelsup 0
+				 :varnoold 1
+				 :varoattno 2
+				 :location 33
+				 }
+				 )
+				 */
+			IsA(node, Var)
+			) {
+		char		*key;
 		StringInfoData	buf;
-        Index   varattno = ((Var *) node)->varattno;
-        Assert(0 < varattno && varattno <= tupdesc->natts);
-        key = NameStr(tupdesc->attrs[varattno - 1]->attname);
+		Index		varattno = ((Var *) node)->varattno;
+		Assert(0 < varattno && varattno <= tupdesc->natts);
+		key = NameStr(tupdesc->attrs[varattno - 1]->attname);
 
-        initStringInfo(&buf);
-        appendStringInfo(&buf, "%s=%s", percent_encode((unsigned char *) key, -1),
-            percent_encode((unsigned char*)"true", -1));
+		initStringInfo(&buf);
+		appendStringInfo(&buf, "%s=%s", percent_encode((unsigned char *) key, -1),
+				percent_encode((unsigned char*)"true", -1));
 		return buf.data;
-    }
+	}
 	else if (IsA(node, OpExpr))
 	{
-		OpExpr	   *op = (OpExpr *) node;
-		Node	   *left, *right, *tmp;
+		OpExpr		 *op = (OpExpr *) node;
+		Node		 *left, *right, *tmp;
 		Index		varattno;
-		char	   *key, *val;
+		char		 *key, *val;
 		StringInfoData	buf;
 
 		if (list_length(op->args) != 2)
 			ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR), errmsg("Operators with not 2 arguments aren't supported")));
 
 		if (!(
-            op->opfuncid == F_TEXTEQ
-            ||
-            /* integers */
-            op->opfuncid == F_INT2EQ
-            ||
-            op->opfuncid == F_INT4EQ
-            ||
-            op->opfuncid == F_INT24EQ
-            ||
-            op->opfuncid == F_INT42EQ
-            ||
-            op->opfuncid == F_INT8EQ
-            ||
-            op->opfuncid == F_INT84EQ
-            ||
-            op->opfuncid == F_INT48EQ
-            ||
-            op->opfuncid == F_INT28EQ
-            ||
-            op->opfuncid == F_INT82EQ
-            ||
-            op->opfuncid == F_DATE_EQ
-            ||
-            op->opfuncid == F_TIME_EQ
-            ||
-            op->opfuncid == F_TIMESTAMP_EQ
-            ||
-            /* can't find it's definition, but it's also TIMESTAMP_EQ */
-            op->opfuncid == 2052
-            /*
-            ||
-            op->opfuncid ==
-            */
-        ))
-			ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR), errmsg("Invalid operator, only '=' is supported")));
+					op->opfuncid == F_TEXTEQ
+					||
+					/* integers */
+					op->opfuncid == F_INT2EQ
+					||
+					op->opfuncid == F_INT4EQ
+					||
+					op->opfuncid == F_INT24EQ
+					||
+					op->opfuncid == F_INT42EQ
+					||
+					op->opfuncid == F_INT8EQ
+					||
+					op->opfuncid == F_INT84EQ
+					||
+					op->opfuncid == F_INT48EQ
+					||
+					op->opfuncid == F_INT28EQ
+					||
+					op->opfuncid == F_INT82EQ
+					||
+					op->opfuncid == F_DATE_EQ
+					||
+					op->opfuncid == F_TIME_EQ
+					||
+					op->opfuncid == F_TIMESTAMP_EQ
+					||
+					/* can't find it's definition, but it's also TIMESTAMP_EQ */
+					op->opfuncid == 2052
+					/*
+						 ||
+						 op->opfuncid ==
+						 */
+					))
+					ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR), errmsg("Invalid operator, only '=' is supported")));
 
 		left = list_nth(op->args, 0);
 		right = list_nth(op->args, 1);
 		if(!(
-			(IsA(left, Var) && IsA(right, Const))
-			||
-			(IsA(left, Const) && IsA(right, Var))
-		))
+					(IsA(left, Var) && IsA(right, Const))
+					||
+					(IsA(left, Const) && IsA(right, Var))
+				))
 			ereport(ERROR, (errcode(ERRCODE_SYNTAX_ERROR), errmsg("One operand supposed to be column another constant")));
 		if(IsA(left, Const) && IsA(right, Var))
 		{
@@ -557,7 +557,7 @@ www_param(Node *node, TupleDesc tupdesc)
 		initStringInfo(&buf);
 		val = serialize_const((Const *) right);
 		appendStringInfo(&buf, "%s=%s", percent_encode((unsigned char *) key, -1),
-			percent_encode((unsigned char *) val, -1));
+				percent_encode((unsigned char *) val, -1));
 		return buf.data;
 	}
 	else
@@ -572,16 +572,16 @@ www_param(Node *node, TupleDesc tupdesc)
 
 /*
  * www_get_forein_rel_size
- *   Create a FdwPlan, which is empty for now.
- *     Obtain relation size estimates for a foreign table
+ *	 Create a FdwPlan, which is empty for now.
+ *		 Obtain relation size estimates for a foreign table
  */
-static void
+	static void
 www_get_foreign_rel_size(PlannerInfo *root,
-                     RelOptInfo *baserel,
-                     Oid foreigntableid)
+		RelOptInfo *baserel,
+		Oid foreigntableid)
 {
-   baserel->fdw_private = NULL;
-   /* we can't calculate value for baserel->rows here */
+	baserel->fdw_private = NULL;
+	/* we can't calculate value for baserel->rows here */
 }
 
 /*
@@ -592,40 +592,40 @@ www_get_foreign_rel_size(PlannerInfo *root,
  *		possible access path, which simply returns all records in the order in
  *		the data file.
  */
-static void
+	static void
 www_get_foreign_paths(PlannerInfo *root,
-					RelOptInfo *baserel,
-					Oid foreigntableid)
+		RelOptInfo *baserel,
+		Oid foreigntableid)
 {
-    /* calculations from file_fdw
-     * we can't calculate value for baserel->rows here
-     * */
-	Cost		cpu_per_tuple   = cpu_tuple_cost * 10 + baserel->baserestrictcost.per_tuple;
-	Cost		startup_cost    = baserel->baserestrictcost.startup;
-	Cost		total_cost      = startup_cost + cpu_per_tuple * baserel->rows;
+	/* calculations from file_fdw
+	 * we can't calculate value for baserel->rows here
+	 * */
+	Cost		cpu_per_tuple		= cpu_tuple_cost * 10 + baserel->baserestrictcost.per_tuple;
+	Cost		startup_cost		= baserel->baserestrictcost.startup;
+	Cost		total_cost			= startup_cost + cpu_per_tuple * baserel->rows;
 
 	/* Create a ForeignPath node and add it as only possible path */
 	add_path(baserel, (Path *)
-			 create_foreignscan_path(root, baserel,
-									 baserel->rows,
-									 startup_cost,
-									 total_cost,
-									 NIL, /* no pathkeys */
-									 NULL, /* no outer rel either */
-									 NIL)); /* no fdw_private data */
+			create_foreignscan_path(root, baserel,
+				baserel->rows,
+				startup_cost,
+				total_cost,
+				NIL, /* no pathkeys */
+				NULL, /* no outer rel either */
+				NIL)); /* no fdw_private data */
 }
 
 /*
  * www_get_foreign_plan
  *		Create a ForeignScan plan node for scanning the foreign table
  */
-static ForeignScan *
+	static ForeignScan *
 www_get_foreign_plan(PlannerInfo *root,
-				   RelOptInfo *baserel,
-				   Oid foreigntableid,
-				   ForeignPath *best_path,
-				   List *tlist,
-				   List *scan_clauses)
+		RelOptInfo *baserel,
+		Oid foreigntableid,
+		ForeignPath *best_path,
+		List *tlist,
+		List *scan_clauses)
 {
 	Index		scan_relid = baserel->relid;
 
@@ -640,17 +640,17 @@ www_get_foreign_plan(PlannerInfo *root,
 
 	/* Create the ForeignScan node */
 	return make_foreignscan(tlist,
-							scan_clauses,
-							scan_relid,
-							NIL, /* no expressions to evaluate */
-							NIL); /* no private state either */
+			scan_clauses,
+			scan_relid,
+			NIL, /* no expressions to evaluate */
+			NIL); /* no private state either */
 }
 
 /*
  * www_explain
- *   Produce extra output for EXPLAIN
+ *	 Produce extra output for EXPLAIN
  */
-static void
+	static void
 www_explain(ForeignScanState *node, ExplainState *es)
 {
 	d("www_explain routine");
@@ -663,7 +663,7 @@ www_explain(ForeignScanState *node, ExplainState *es)
  * return string description for spi function return code
  */
 static
-char*
+	char*
 describe_spi_code(int code)
 {
 	switch(code)
@@ -696,7 +696,7 @@ describe_spi_code(int code)
 		case SPI_OK_REWRITTEN:		return "OK REWRITTEN";
 
 		default:
-			return	"undefined code";
+															return	"undefined code";
 	}
 
 	return	"undefined code";
@@ -706,16 +706,16 @@ describe_spi_code(int code)
  * serialize_request_parameters_with_callback
  * serialize request parameters using specified callback
  * currently following serialize of quals are supported:
- *  * null (pass as it as null no matter on quals)
- *  * log (same as with debug_print_parse)
- *  * empty string otherwise (plus issue warning)
- *  * json (pass as it as null no matter on quals)
- *  * xml (pass as it as null no matter on quals)
+ *	* null (pass as it as null no matter on quals)
+ *	* log (same as with debug_print_parse)
+ *	* empty string otherwise (plus issue warning)
+ *	* json (pass as it as null no matter on quals)
+ *	* xml (pass as it as null no matter on quals)
  * there is not finished branch for tree serialization into json/xml
  * but it started taking too much time and postponed for next versions (if any)
  */
 static
-void
+	void
 serialize_request_with_callback(WWW_fdw_options *opts, Oid opts_type, Datum opts_value, ForeignScanState *node, StringInfoData *url, PostParameters *post)
 {
 	int	res;
@@ -746,22 +746,22 @@ serialize_request_with_callback(WWW_fdw_options *opts, Oid opts_type, Datum opts
 	{
 		initStringInfo(&qualSer);
 		appendStringInfoString( &qualSer, serialize_quals(
-									(0 == strcmp("0",opts->request_serialize_human_readable) ? 0 : 1),
-									node->ss.ps.plan->qual,
-									serialize_node_with_children_callback_json,
-									serialize_node_without_children_callback_json,
-serialize_list_separator_callback_json) );
+					(0 == strcmp("0",opts->request_serialize_human_readable) ? 0 : 1),
+					node->ss.ps.plan->qual,
+					serialize_node_with_children_callback_json,
+					serialize_node_without_children_callback_json,
+					serialize_list_separator_callback_json) );
 		nulls[1] = ' ';
 	}
 	else if(0 == strcmp("xml", opts->request_serialize_type))
 	{
 		initStringInfo(&qualSer);
 		appendStringInfoString( &qualSer, serialize_quals(
-									(0 == strcmp("0",opts->request_serialize_human_readable) ? 0 : 1),
-									node->ss.ps.plan->qual,
-									serialize_node_with_children_callback_xml,
-									serialize_node_without_children_callback_xml,
-									serialize_list_separator_callback_xml) );
+					(0 == strcmp("0",opts->request_serialize_human_readable) ? 0 : 1),
+					node->ss.ps.plan->qual,
+					serialize_node_with_children_callback_xml,
+					serialize_node_without_children_callback_xml,
+					serialize_list_separator_callback_xml) );
 		nulls[1] = ' ';
 	}
 	else
@@ -770,11 +770,11 @@ serialize_list_separator_callback_json) );
 		initStringInfo(&qualSer);
 
 		ereport(WARNING,
-			(
-				errcode(ERRCODE_FDW_INVALID_OPTION_NAME),
-				errmsg("Invalid request_serialize_type: %s", opts->request_serialize_type)
-			)
-		);
+				(
+				 errcode(ERRCODE_FDW_INVALID_OPTION_NAME),
+				 errmsg("Invalid request_serialize_type: %s", opts->request_serialize_type)
+				)
+				);
 
 		nulls[1] = ' ';
 	}
@@ -797,31 +797,31 @@ serialize_list_separator_callback_json) );
 	if(0 > res)
 	{
 		ereport(ERROR,
-			(
-				errcode(ERRCODE_SYNTAX_ERROR),
-				errmsg("Can't spi execute: %i (%s)", res, describe_spi_code(res))
-			)
-		);
+				(
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("Can't spi execute: %i (%s)", res, describe_spi_code(res))
+				)
+				);
 	}
 
 	if(0 == SPI_processed)
 	{
 		ereport(ERROR,
-			(
-				errcode(ERRCODE_SYNTAX_ERROR),
-				errmsg("No results were returned from response_iterate_callback '%s': %i", opts->response_iterate_callback, SPI_processed)
-			)
-		);
+				(
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("No results were returned from response_iterate_callback '%s': %i", opts->response_iterate_callback, SPI_processed)
+				)
+				);
 	}
 
 	if(1 < SPI_processed)
 	{
 		ereport(ERROR,
-			(
-				errcode(ERRCODE_SYNTAX_ERROR),
-				errmsg("More than 1 result was returned from response_iterate_callback '%s': %i", opts->response_iterate_callback, SPI_processed)
-			)
-		);
+				(
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("More than 1 result was returned from response_iterate_callback '%s': %i", opts->response_iterate_callback, SPI_processed)
+				)
+				);
 	}
 
 	rurl = SPI_getvalue(SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1);
@@ -862,18 +862,18 @@ serialize_list_separator_callback_json) );
 
 /*
  * serialize_request_parameters
- *  serialize column=value sql conditions into column=value get parameters
- *  column & value are url encoded
+ *	serialize column=value sql conditions into column=value get parameters
+ *	column & value are url encoded
  */
-static void
+	static void
 serialize_request_parameters(ForeignScanState* node, StringInfoData *url)
 {
 	if (node->ss.ps.plan->qual)
 	{
 		bool		param_first = true;
 		char		char_first = '?', *ch;
-		ListCell   *lc;
-		List	   *quals = list_copy(node->ss.ps.qual);
+		ListCell	 *lc;
+		List		 *quals = list_copy(node->ss.ps.qual);
 
 		/* check if we have '?' already in the url -
 		 * append our parameters starting with '&', not '?' */
@@ -886,10 +886,10 @@ serialize_request_parameters(ForeignScanState* node, StringInfoData *url)
 
 		foreach (lc, quals)
 		{
-			ExprState	   *state = lfirst(lc);
+			ExprState		 *state = lfirst(lc);
 
 			char *param = www_param((Node *) state->expr,
-							node->ss.ss_currentRelation->rd_att);
+					node->ss.ss_currentRelation->rd_att);
 
 			if (param)
 			{
@@ -927,13 +927,13 @@ serialize_request_parameters(ForeignScanState* node, StringInfoData *url)
  *	Also node names are checked to match result columns.
  *	At least one name must match. Matching columns must have only one text node child.
  *	All subnodes must have same name.
-*/
+ */
 static
-bool
+	bool
 xml_check_result_array(xmlNodePtr node, TupleDesc tuple_desc, xmlChar **attnames)
 {
 	xmlNodePtr	it		= NULL,
-				itc		= NULL;
+							itc		= NULL;
 	const xmlChar *name	= NULL;
 	int			i,n		= 0;
 	bool		match	= false;
@@ -967,16 +967,16 @@ xml_check_result_array(xmlNodePtr node, TupleDesc tuple_desc, xmlChar **attnames
 
 							/* TODO: check if we need such check:
 							 * we need to have only single XML_TEXT_NODE among children
-							if(itc->children)
-							{
+							 if(itc->children)
+							 {
 
-								if(XML_TEXT_NODE != itc->children->type)
-									return	false;
+							 if(XML_TEXT_NODE != itc->children->type)
+							 return	false;
 
-								if(itc->children->next)
-									return	false;
-							}
-							*/
+							 if(itc->children->next)
+							 return	false;
+							 }
+							 */
 
 							n++;
 							break;
@@ -1021,15 +1021,15 @@ xml_check_result_array(xmlNodePtr node, TupleDesc tuple_desc, xmlChar **attnames
 /*
  * xml_get_result_array_in_doc
  *	search for a result in parsed xml
-*/
+ */
 static
-xmlNodePtr
+	xmlNodePtr
 xml_get_result_array_in_doc(xmlDocPtr doc, TupleDesc tuple_desc)
 {
 	xmlNodePtr	suspect	= NULL,
-				it		= NULL;
+							it		= NULL;
 	List		*curr	= NULL,
-				*next	= NULL;
+					*next	= NULL;
 	ListCell*	cell;
 	xmlChar**	attnames;
 	int			i;
@@ -1095,9 +1095,9 @@ xml_get_result_array_in_doc(xmlDocPtr doc, TupleDesc tuple_desc)
  * json_check_result_array
  *	Currently checks all elements to be objects.
  *	And checks if at least one key in the object matches result columns.
-*/
+ */
 static
-bool
+	bool
 json_check_result_array(JSONNode* root, TupleDesc tuple_desc)
 {
 	int	i,j,k,n;
@@ -1134,14 +1134,14 @@ json_check_result_array(JSONNode* root, TupleDesc tuple_desc)
  * json_get_result_array_in_tree
  *	find the result array in json response structure
  *	check json_check_result_array for valid array description
-*/
+ */
 static
-JSONNode*
+	JSONNode*
 json_get_result_array_in_tree(JSONNode* root, TupleDesc tuple_desc)
 {
 	JSONNode*	suspect	= NULL;
 	List		*curr	= list_make1(root),
-				*next	= NULL;
+					*next	= NULL;
 	ListCell*	cell;
 	int			i;
 
@@ -1174,7 +1174,7 @@ json_get_result_array_in_tree(JSONNode* root, TupleDesc tuple_desc)
 				case JSON_TRUE:
 				case JSON_FALSE:
 					break;
-				/* for removing warning */
+					/* for removing warning */
 				case JSON_NONE:
 				case JSON_KEY:
 				case JSON_ARRAY_END:
@@ -1192,7 +1192,7 @@ json_get_result_array_in_tree(JSONNode* root, TupleDesc tuple_desc)
 }
 
 static
-Datum
+	Datum
 make_text_data(StringInfoData *str)
 {
 	text *t	= (text*)palloc(VARHDRSZ + str->len);
@@ -1208,7 +1208,7 @@ make_text_data(StringInfoData *str)
  * prepare/setup reply structure from it's answer
  */
 static
-Reply*
+	Reply*
 call_response_deserialize_callback(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type, Datum opts_value, StringInfoData *buffer)
 {
 	int		res, i,j, natts;
@@ -1219,7 +1219,7 @@ call_response_deserialize_callback(ForeignScanState *node, WWW_fdw_options *opts
 	Relation		rel;
 	AttInMetadata	*attinmeta;
 	char			**values	= NULL,
-		**names	= NULL;
+						**names	= NULL;
 	int16			*columns;
 	MemoryContext	mctxt = CurrentMemoryContext, spimctxt;
 	bool			use_libxml	= false;
@@ -1261,11 +1261,11 @@ call_response_deserialize_callback(ForeignScanState *node, WWW_fdw_options *opts
 	if(0 > res)
 	{
 		ereport(ERROR,
-			(
-				errcode(ERRCODE_SYNTAX_ERROR),
-				errmsg("Can't execute response_deserialize_callback '%s': %i (%s)", opts->response_deserialize_callback, res, describe_spi_code(res))
-			)
-		);
+				(
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("Can't execute response_deserialize_callback '%s': %i (%s)", opts->response_deserialize_callback, res, describe_spi_code(res))
+				)
+				);
 	}
 
 	/* save result to output parameters */
@@ -1339,7 +1339,7 @@ call_response_deserialize_callback(ForeignScanState *node, WWW_fdw_options *opts
  * will be used to pass it to callbacks
  */
 static
-void
+	void
 get_www_fdw_options(WWW_fdw_options *opts, Oid *opts_type, Datum *opts_value)
 {
 	Datum	data[2];
@@ -1377,19 +1377,19 @@ get_www_fdw_options(WWW_fdw_options *opts, Oid *opts_type, Datum *opts_value)
 	MemoryContext	mctxt = CurrentMemoryContext, spimctxt;
 
 	SPI_connect_wrapper();
-    /* read following:
-     * http://wiki.postgresql.org/wiki/Developer_FAQ#How_do_I_efficiently_access_information_in_system_catalogs_from_the_backend_code.3F
-     * may be it makes sense reimplementing following select
-     */
+	/* read following:
+	 * http://wiki.postgresql.org/wiki/Developer_FAQ#How_do_I_efficiently_access_information_in_system_catalogs_from_the_backend_code.3F
+	 * may be it makes sense reimplementing following select
+	 */
 	res	= SPI_execute("SELECT t.oid,t.typnamespace FROM pg_type t join pg_namespace ns ON t.typnamespace=ns.oid WHERE t.typname='wwwfdwoptions'", true, 0);
 	if(0 > res)
 	{
 		ereport(ERROR,
 				(
-					errcode(ERRCODE_SYNTAX_ERROR),
-					errmsg("Can't identify WWW_fdw_options OID: %i (%s)", res, describe_spi_code(res))
-					)
-			);
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("Can't identify WWW_fdw_options OID: %i (%s)", res, describe_spi_code(res))
+				)
+				);
 	}
 
 	if(1 == SPI_processed)
@@ -1413,10 +1413,10 @@ get_www_fdw_options(WWW_fdw_options *opts, Oid *opts_type, Datum *opts_value)
 	{
 		ereport(ERROR,
 				(
-					errcode(ERRCODE_SYNTAX_ERROR),
-					errmsg("Can't identify WWW_fdw_options OID: not exactly 1 result was returned (%d)", SPI_processed)
-					)
-			);
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("Can't identify WWW_fdw_options OID: not exactly 1 result was returned (%d)", SPI_processed)
+				)
+				);
 	}
 
 	SPI_finish_wrapper();
@@ -1428,7 +1428,7 @@ get_www_fdw_options(WWW_fdw_options *opts, Oid *opts_type, Datum *opts_value)
  * will be used to pass it to callbacks
  */
 static
-void
+	void
 get_www_fdw_post_parameters(PostParameters *post, Oid *post_type, Datum *post_value)
 {
 	Datum	data[1];
@@ -1444,19 +1444,19 @@ get_www_fdw_post_parameters(PostParameters *post, Oid *post_type, Datum *post_va
 	MemoryContext	mctxt = CurrentMemoryContext, spimctxt;
 
 	SPI_connect_wrapper();
-    /* read following:
-     * http://wiki.postgresql.org/wiki/Developer_FAQ#How_do_I_efficiently_access_information_in_system_catalogs_from_the_backend_code.3F
-     * may be it makes sense reimplementing following select
-     */
+	/* read following:
+	 * http://wiki.postgresql.org/wiki/Developer_FAQ#How_do_I_efficiently_access_information_in_system_catalogs_from_the_backend_code.3F
+	 * may be it makes sense reimplementing following select
+	 */
 	res	= SPI_execute("SELECT t.oid,t.typname,t.typnamespace FROM pg_type t join pg_namespace ns ON t.typnamespace=ns.oid WHERE t.typname='wwwfdwpostparameters'", true, 0);
 	if(0 > res)
 	{
 		ereport(ERROR,
 				(
-					errcode(ERRCODE_SYNTAX_ERROR),
-					errmsg("Can't identify WWWFdwPostParameters OID: %i (%s)", res, describe_spi_code(res))
-					)
-			);
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("Can't identify WWWFdwPostParameters OID: %i (%s)", res, describe_spi_code(res))
+				)
+				);
 	}
 
 	if(1 == SPI_processed)
@@ -1480,10 +1480,10 @@ get_www_fdw_post_parameters(PostParameters *post, Oid *post_type, Datum *post_va
 	{
 		ereport(ERROR,
 				(
-					errcode(ERRCODE_SYNTAX_ERROR),
-					errmsg("Can't identify WWWFdwPostParameters OID: not exactly 1 result was returned (%d)", SPI_processed)
-					)
-			);
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("Can't identify WWWFdwPostParameters OID: not exactly 1 result was returned (%d)", SPI_processed)
+				)
+				);
 	}
 
 	SPI_finish_wrapper();
@@ -1494,7 +1494,7 @@ get_www_fdw_post_parameters(PostParameters *post, Oid *post_type, Datum *post_va
  * convert JSONNode* element to string
  */
 static
-char*
+	char*
 json2string(JSONNode* json)
 {
 	StringInfoData buf;
@@ -1521,7 +1521,7 @@ json2string(JSONNode* json)
 			return	"true";
 		case JSON_FALSE:
 			return	"false";
-		/* for removing warning */
+			/* for removing warning */
 		case JSON_NONE:
 		case JSON_KEY:
 		case JSON_ARRAY_END:
@@ -1536,12 +1536,12 @@ json2string(JSONNode* json)
  * go through parsed result and prepare reply/result structure
  */
 static
-Reply*
+	Reply*
 prepare_xml_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type, Datum opts_value, xmlDocPtr doc)
 {
 	xmlNodePtr	result	= NULL,
-		it = NULL,
-		itc= NULL;
+							it = NULL,
+							itc= NULL;
 	Relation	rel;
 	AttInMetadata	*attinmeta;
 	Reply			*reply;
@@ -1557,7 +1557,7 @@ prepare_xml_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type,
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
 				 errmsg("Can't find result in parsed server's xml response")
-					));
+				));
 
 	d("Result array was found in xml response");
 
@@ -1613,7 +1613,7 @@ prepare_xml_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type,
  * go through parsed result and prepare reply/result structure
  */
 static
-Reply*
+	Reply*
 prepare_json_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type, Datum opts_value, JSONNode *root)
 {
 	JSONNode		*result, json_obj;
@@ -1631,7 +1631,7 @@ prepare_json_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type
 		ereport(ERROR,
 				(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
 				 errmsg("Can't find result in parsed server's json response")
-					));
+				));
 
 	d("Result array was found in json response");
 
@@ -1673,9 +1673,9 @@ prepare_json_result(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type
 
 /*
  * www_begin
- *   Query search API and setup result
+ *	 Query search API and setup result
  */
-static void
+	static void
 www_begin(ForeignScanState *node, int eflags)
 {
 	WWW_fdw_options	*opts;
@@ -1710,12 +1710,12 @@ www_begin(ForeignScanState *node, int eflags)
 
 	/* initialize options type and value if any of callback specified */
 	if(
-		opts->request_serialize_callback
-		||
-		opts->response_deserialize_callback
-		||
-		opts->response_iterate_callback
-	)
+			opts->request_serialize_callback
+			||
+			opts->response_deserialize_callback
+			||
+			opts->response_iterate_callback
+		)
 	{
 		get_www_fdw_options(opts, &opts_type, &opts_value);
 	}
@@ -1794,35 +1794,35 @@ www_begin(ForeignScanState *node, int eflags)
 			ereport(ERROR,
 					(errcode(ERRCODE_FDW_INVALID_ATTRIBUTE_VALUE),
 					 errmsg("No response_deserialize_callback for response_type='other'")
-						));
+					));
 	}
 
-        /* Ioana START changed on Jan 18, 2013 - added 4 more options for secure connections */
-        if(opts->ssl_cert)
-        {
-                curl_easy_setopt(curl, CURLOPT_SSLCERT, opts->ssl_cert);
-        }
-        if(opts->ssl_key)
-        {
-                curl_easy_setopt(curl, CURLOPT_SSLKEY, opts->ssl_key);
-        }
-        if(opts->cainfo)
-        {
-                curl_easy_setopt(curl, CURLOPT_CAINFO, opts->cainfo);
-        }
-        if(opts->proxy)
-        {
-                curl_easy_setopt(curl, CURLOPT_PROXY, opts->proxy);
-        }
-        /* Ioana END changed on Jan 18, 2013 */
+	/* Ioana START changed on Jan 18, 2013 - added 4 more options for secure connections */
+	if(opts->ssl_cert)
+	{
+		curl_easy_setopt(curl, CURLOPT_SSLCERT, opts->ssl_cert);
+	}
+	if(opts->ssl_key)
+	{
+		curl_easy_setopt(curl, CURLOPT_SSLKEY, opts->ssl_key);
+	}
+	if(opts->cainfo)
+	{
+		curl_easy_setopt(curl, CURLOPT_CAINFO, opts->cainfo);
+	}
+	if(opts->proxy)
+	{
+		curl_easy_setopt(curl, CURLOPT_PROXY, opts->proxy);
+	}
+	/* Ioana END changed on Jan 18, 2013 */
 
 	ret = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
 	if(ret) {
 		ereport(ERROR,
-			(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
-			errmsg("Can't get a response from server: %s", curl_error_buffer)
-			));
+				(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
+				 errmsg("Can't get a response from server: %s", curl_error_buffer)
+				));
 	}
 	if(curl_opts)
 		curl_slist_free_all(curl_opts);
@@ -1842,7 +1842,7 @@ www_begin(ForeignScanState *node, int eflags)
 				ereport(ERROR,
 						(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
 						 errmsg("Can't parse server's json response, parser error code: %i", ret)
-							));
+						));
 
 			d("JSON response was parsed");
 
@@ -1863,13 +1863,13 @@ www_begin(ForeignScanState *node, int eflags)
 		{
 			/* get result in parsed response tree
 			 * and save it for further processing in results iterations
-			*/
+			 */
 
 			xmlDocPtr	doc		= NULL;
 			int			res;
 
 			/* there is no more input, indicate the parsing is finished */
-		    xmlParseChunk(xml_parserr, curl_error_buffer, 0, 1);
+			xmlParseChunk(xml_parserr, curl_error_buffer, 0, 1);
 
 			doc	= xml_parserr->myDoc;
 			res	= xml_parserr->wellFormed;
@@ -1878,9 +1878,9 @@ www_begin(ForeignScanState *node, int eflags)
 
 			if(!res)
 				ereport(ERROR,
-					(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
-					errmsg("Response xml isn't well formed")
-					));
+						(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
+						 errmsg("Response xml isn't well formed")
+						));
 
 			d("Xml response was parsed");
 
@@ -1898,7 +1898,7 @@ www_begin(ForeignScanState *node, int eflags)
 }
 
 static
-HeapTuple
+	HeapTuple
 call_response_iterate_callback(ForeignScanState *node, WWW_fdw_options *opts, Oid opts_type, Datum opts_value, HeapTuple tuple)
 {
 	int res;
@@ -1922,31 +1922,31 @@ call_response_iterate_callback(ForeignScanState *node, WWW_fdw_options *opts, Oi
 	if(0 > res)
 	{
 		ereport(ERROR,
-			(
-				errcode(ERRCODE_SYNTAX_ERROR),
-				errmsg("Can't execute response_iterate_callback '%s': %i (%s)", opts->response_iterate_callback, res, describe_spi_code(res))
-			)
-		);
+				(
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("Can't execute response_iterate_callback '%s': %i (%s)", opts->response_iterate_callback, res, describe_spi_code(res))
+				)
+				);
 	}
 
 	if(0 == SPI_processed)
 	{
 		ereport(ERROR,
-			(
-				errcode(ERRCODE_SYNTAX_ERROR),
-				errmsg("No results were returned from response_iterate_callback '%s'", opts->response_iterate_callback)
-			)
-		);
+				(
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("No results were returned from response_iterate_callback '%s'", opts->response_iterate_callback)
+				)
+				);
 	}
 
 	if(1 < SPI_processed)
 	{
 		ereport(ERROR,
-			(
-				errcode(ERRCODE_SYNTAX_ERROR),
-				errmsg("More than 1 result was returned from response_iterate_callback '%s': %i", opts->response_iterate_callback, SPI_processed)
-			)
-		);
+				(
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("More than 1 result was returned from response_iterate_callback '%s': %i", opts->response_iterate_callback, SPI_processed)
+				)
+				);
 	}
 
 	/* "make a copy of a row in the upper executor context": */
@@ -1959,9 +1959,9 @@ call_response_iterate_callback(ForeignScanState *node, WWW_fdw_options *opts, Oi
 
 /*
  * www_iterate
- *   return row per each call
+ *	 return row per each call
  */
-static TupleTableSlot *
+	static TupleTableSlot *
 www_iterate(ForeignScanState *node)
 {
 	TupleTableSlot	*slot	= node->ss.ss_ScanTupleSlot;
@@ -1985,11 +1985,11 @@ www_iterate(ForeignScanState *node)
 		d("call response_iterate_callback");
 
 		tuple = call_response_iterate_callback(
-			node,
-			reply->options,
-			reply->opts_type,
-			reply->opts_value,
-			reply->tuples[reply->tuple_index++]);
+				node,
+				reply->options,
+				reply->opts_type,
+				reply->opts_value,
+				reply->tuples[reply->tuple_index++]);
 	}
 	else {
 		tuple = (HeapTuple) palloc(HEAPTUPLESIZE);
@@ -2005,10 +2005,10 @@ www_iterate(ForeignScanState *node)
  * www_rescan
  * FDW rescan handler/callback
  */
-static void
+	static void
 www_rescan(ForeignScanState *node)
 {
-	Reply	   *reply = (Reply *) node->fdw_state;
+	Reply		 *reply = (Reply *) node->fdw_state;
 
 	d("www_rescan routine");
 
@@ -2019,7 +2019,7 @@ www_rescan(ForeignScanState *node)
  * www_end
  * FDW end handler/callback
  */
-static void
+	static void
 www_end(ForeignScanState *node)
 {
 	d("www_end routine");
@@ -2028,8 +2028,8 @@ www_end(ForeignScanState *node)
 /*
  * json_write_data_to_parser
  *	parse json chunk by chunk
-*/
-static size_t
+ */
+	static size_t
 json_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 {
 	int			segsize = size * nmemb;
@@ -2039,9 +2039,9 @@ json_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 	ret = json_parser_string(parser, buffer, segsize, NULL);
 	if (ret)
 		ereport(ERROR,
-			(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
-			errmsg("Can't parse server's json response, parser error code: %i", ret)
-			));
+				(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
+				 errmsg("Can't parse server's json response, parser error code: %i", ret)
+				));
 
 	return segsize;
 }
@@ -2049,8 +2049,8 @@ json_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 /*
  * xml_write_data_to_parser
  *	parse xml chunk by chunk
-*/
-static size_t
+ */
+	static size_t
 xml_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 {
 	int			segsize = size * nmemb;
@@ -2060,22 +2060,22 @@ xml_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 	if(NULL == *ctxt) {
 		/* parser wasn't initialized,
 		 * because we are waiting first chunk for encoding analyze
-		*/
+		 */
 
 		/*
-		* Create a progressive parsing context, the 2 first arguments
-		* are not used since we want to build a tree and not use a SAX
-		* parsing interface. We also pass the first bytes of the document
-		* to allow encoding detection when creating the parser but this
-		* is optional.
-		*/
+		 * Create a progressive parsing context, the 2 first arguments
+		 * are not used since we want to build a tree and not use a SAX
+		 * parsing interface. We also pass the first bytes of the document
+		 * to allow encoding detection when creating the parser but this
+		 * is optional.
+		 */
 		*ctxt = xmlCreatePushParserCtxt(NULL, NULL, buffer, segsize, NULL);
 		if (*ctxt == NULL) {
 			xmlErrorPtr	err	= xmlCtxtGetLastError(*ctxt);
 			ereport(ERROR,
-				(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
-				errmsg("Can't parse server's xml response: %s", err ? err->message : "")
-				));
+					(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
+					 errmsg("Can't parse server's xml response: %s", err ? err->message : "")
+					));
 		}
 
 		return segsize;
@@ -2086,9 +2086,9 @@ xml_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 	{
 		xmlErrorPtr	err	= xmlCtxtGetLastError(*ctxt);
 		ereport(ERROR,
-			(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
-			errmsg("Can't parse server's xml response, parser error code: %i, message: %s", ret, err ? err->message : "")
-			));
+				(errcode(ERRCODE_FDW_INVALID_STRING_FORMAT),
+				 errmsg("Can't parse server's xml response, parser error code: %i, message: %s", ret, err ? err->message : "")
+				));
 	}
 
 	return segsize;
@@ -2097,8 +2097,8 @@ xml_write_data_to_parser(void *buffer, size_t size, size_t nmemb, void *userp)
 /*
  * write_data_to_buffer
  *	accumulate json response in buffer for further processing
-*/
-static size_t
+ */
+	static size_t
 write_data_to_buffer(void *buffer, size_t size, size_t nmemb, void *userp)
 {
 	StringInfoData	*b	= (StringInfoData*)userp;
@@ -2113,7 +2113,7 @@ write_data_to_buffer(void *buffer, size_t size, size_t nmemb, void *userp)
  * get_options
  * fetch the options for a mysql_fdw foreign table.
  */
-static void
+	static void
 get_options(Oid foreigntableid, WWW_fdw_options *opts)
 {
 	ForeignTable	*f_table;
@@ -2153,10 +2153,10 @@ get_options(Oid foreigntableid, WWW_fdw_options *opts)
 	opts->response_deserialize_callback	= NULL;
 	opts->response_iterate_callback		= NULL;
 
-	opts->ssl_cert         = NULL;
-	opts->ssl_key          = NULL;
-	opts->cainfo           = NULL;
-	opts->proxy            = NULL;
+	opts->ssl_cert				 = NULL;
+	opts->ssl_key					 = NULL;
+	opts->cainfo					 = NULL;
+	opts->proxy						 = NULL;
 
 	/* Loop through the options, and get the server/port */
 	foreach(lc, options)
@@ -2212,16 +2212,16 @@ get_options(Oid foreigntableid, WWW_fdw_options *opts)
 			opts->response_iterate_callback	= defGetString(def);
 
 		if (strcmp(def->defname, "ssl_cert") == 0)
-                        opts->ssl_cert = defGetString(def);
+			opts->ssl_cert = defGetString(def);
 
-                if (strcmp(def->defname, "ssl_key") == 0)
-                        opts->ssl_key = defGetString(def);
+		if (strcmp(def->defname, "ssl_key") == 0)
+			opts->ssl_key = defGetString(def);
 
-                if (strcmp(def->defname, "cainfo") == 0)
-                        opts->cainfo = defGetString(def);
+		if (strcmp(def->defname, "cainfo") == 0)
+			opts->cainfo = defGetString(def);
 
-                if (strcmp(def->defname, "proxy") == 0)
-                        opts->proxy = defGetString(def);
+		if (strcmp(def->defname, "proxy") == 0)
+			opts->proxy = defGetString(def);
 	}
 
 	/* Default values, if required */
@@ -2245,39 +2245,39 @@ get_options(Oid foreigntableid, WWW_fdw_options *opts)
 	/* Check we have mandatory options */
 	if (!opts->uri)
 		ereport(ERROR,
-			(errcode(ERRCODE_SYNTAX_ERROR),
-			errmsg("At least uri option must be specified")
-			));
+				(errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("At least uri option must be specified")
+				));
 }
 
 static
-void
+	void
 SPI_connect_wrapper()
 {
 	int res	= SPI_connect();
 	if(SPI_OK_CONNECT != res)
 	{
 		ereport(ERROR,
-			(
-				errcode(ERRCODE_SYNTAX_ERROR),
-				errmsg("Can't spi connect: %i (%s)", res, describe_spi_code(res))
-			)
-		);
+				(
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("Can't spi connect: %i (%s)", res, describe_spi_code(res))
+				)
+				);
 	}
 }
 
 static
-void
+	void
 SPI_finish_wrapper()
 {
 	int res	= SPI_finish();
- 	if(SPI_OK_FINISH != res)
+	if(SPI_OK_FINISH != res)
 	{
 		ereport(ERROR,
-			(
-				errcode(ERRCODE_SYNTAX_ERROR),
-				errmsg("Can't spi finish: %i (%s)", res, describe_spi_code(res))
-			)
-		);
+				(
+				 errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("Can't spi finish: %i (%s)", res, describe_spi_code(res))
+				)
+				);
 	}
 }
