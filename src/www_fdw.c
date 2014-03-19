@@ -1342,8 +1342,8 @@ static
 	void
 get_www_fdw_options(WWW_fdw_options *opts, Oid *opts_type, Datum *opts_value)
 {
-	Datum data[2];
-	bool isnull[2] = {false, false};
+	Datum data[1];
+	bool isnull[1] = {false};
 	int res;
 	char* options[] = {
 		opts->uri,
@@ -1381,7 +1381,7 @@ get_www_fdw_options(WWW_fdw_options *opts, Oid *opts_type, Datum *opts_value)
 	 * http://wiki.postgresql.org/wiki/Developer_FAQ#How_do_I_efficiently_access_information_in_system_catalogs_from_the_backend_code.3F
 	 * may be it makes sense reimplementing following select
 	 */
-	res = SPI_execute("SELECT t.oid,t.typnamespace FROM pg_type t join pg_namespace ns ON t.typnamespace=ns.oid WHERE t.typname='wwwfdwoptions'", true, 0);
+	res = SPI_execute("SELECT t.oid FROM pg_type t join pg_namespace ns ON t.typnamespace=ns.oid WHERE t.typname='wwwfdwoptions' LIMIT 1", true, 0);
 	if(0 > res)
 	{
 		ereport(ERROR,
